@@ -7,11 +7,12 @@ import com.example.room.repository.UserRepository;
 import com.example.room.utils.Enums.GenderEnum;
 import com.example.room.utils.Enums.RoleEnum;
 import com.example.room.utils.PasswordUtil;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 @Component
@@ -22,35 +23,47 @@ public class DataInitializer {
     private final RoleRepository roleRepository;
     private final PasswordUtil passwordUtil;
 
-    @PostConstruct
-    @Transactional
+    @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        Optional<User> optionalUser = userRepository.findByRole(RoleEnum.ADMIN);
-        if(optionalUser.isPresent()){
-            return;
-        }
-        Optional<Role> optionalRole = roleRepository.findByName(RoleEnum.ADMIN);
-        Role role = new Role();
-         if(optionalRole.isEmpty()){
-             role = Role.builder()
-                     .name(RoleEnum.ADMIN)
-                     .description("Quyền quản trị hệ thống")
-                     .build();
-             roleRepository.save(role);
-         }else{
-             role = optionalRole.get();
-         }
 
-            User admin = User.builder()
-                    .address("admin")
-                    .email("admin@gmail.com")
-                    .fullName("admin")
-                    .phone("0987654321")
-                    .citizenId("098765456782")
-                    .gender(GenderEnum.FEMALE)
-                    .password(passwordUtil.encode("admin"))
-                    .build();
-            admin.setRole(role);
-            userRepository.save(admin);
+        initRoles();
+
+        initAdminUser();
+    }
+
+    private void initRoles() {
+        Arrays.stream(RoleEnum.values()).forEach(roleEnum -> {
+            Optional<Role> optionalRole = roleRepository.findByName(roleEnum);
+            if (optionalRole.isEmpty()) {
+                Role role = Role.builder()
+                        .name(roleEnum)
+                        .description("Vai trò " + roleEnum.name())
+                        .build();
+                roleRepository.save(role);
+            }
+        });
+    }
+
+    private void initAdminUser() {
+        String email = "admin@gmail.com";
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            return; 
+        }
+
+        Role adminRole = roleRepository.findByName(RoleEnum.ADMIN).get();
+
+        User admin = User.builder()
+                .address("admin")
+                .email("admin@gmail.com")
+                .fullName("admin")
+                .phone("0987654321")
+                .citizenId("098765456782")
+                .gender(GenderEnum.FEMALE)
+                .password(passwordUtil.encode("admin"))
+                .role(adminRole)
+                .build();
+
+        userRepository.save(admin);
     }
 }

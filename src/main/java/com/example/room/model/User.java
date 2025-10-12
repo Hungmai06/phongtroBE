@@ -32,7 +32,7 @@ import java.util.List;
 @Where(clause = "deleted = false")
 public class User extends BaseEntity{
 
-    @Column(nullable = false, length = 128)
+    @Column(unique = true, nullable = false,length = 128)
     private String email;
 
     @Column(name = "full_name", nullable = false, length = 100)

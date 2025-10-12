@@ -19,6 +19,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Where;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -34,9 +36,9 @@ public class Room extends BaseEntity{
 
     @Column(name = "name",nullable = false)
     private String name;
-
-    @Column(name = "images",nullable = false)
-    private String images;
+    
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Image> images;
 
     @Column(name = "description",nullable = false)
     private String description;
