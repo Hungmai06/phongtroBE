@@ -9,6 +9,8 @@ import com.example.room.utils.Enums.RoleEnum;
 import com.example.room.utils.PasswordUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,35 +24,34 @@ public class DataInitializer {
     private final RoleRepository roleRepository;
     private final PasswordUtil passwordUtil;
 
-    @PostConstruct
-    @Transactional
+    @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        Optional<User> optionalUser = userRepository.findByRole(RoleEnum.ADMIN);
-        if(optionalUser.isPresent()){
+
+        String email = "admin@gmail.com";
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
             return;
         }
-        Optional<Role> optionalRole = roleRepository.findByName(RoleEnum.ADMIN);
-        Role role = new Role();
-         if(optionalRole.isEmpty()){
-             role = Role.builder()
-                     .name(RoleEnum.ADMIN)
-                     .description("Quyền quản trị hệ thống")
-                     .build();
-             roleRepository.save(role);
-         }else{
-             role = optionalRole.get();
-         }
 
-            User admin = User.builder()
-                    .address("admin")
-                    .email("admin@gmail.com")
-                    .fullName("admin")
-                    .phone("0987654321")
-                    .citizenId("098765456782")
-                    .gender(GenderEnum.FEMALE)
-                    .password(passwordUtil.encode("admin"))
-                    .build();
-            admin.setRole(role);
-            userRepository.save(admin);
+        Role role = roleRepository.findByName(RoleEnum.ADMIN)
+                .orElseGet(() -> {
+                    return roleRepository.save(Role.builder()
+                            .name(RoleEnum.ADMIN)
+                            .description("Quyền quản trị hệ thống")
+                            .build());
+                });
+
+        User admin = User.builder()
+                .address("admin")
+                .email("admin@gmail.com")
+                .fullName("admin")
+                .phone("0987654321")
+                .citizenId("098765456782")
+                .gender(GenderEnum.FEMALE)
+                .password(passwordUtil.encode("admin"))
+                .role(role)
+                .build();
+
+        userRepository.save(admin);
     }
 }

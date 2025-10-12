@@ -34,7 +34,7 @@ public class BaseEntity implements Serializable {
     private Long id;
 
     @Column(name = "deleted")
-    private Boolean deleted = Boolean.TRUE;
+    private Boolean deleted = Boolean.FALSE;
 
     @Column(name = "version")
     @Version

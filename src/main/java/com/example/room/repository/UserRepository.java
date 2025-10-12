@@ -12,11 +12,12 @@ import java.util.Optional;
 
 
 public interface UserRepository extends JpaRepository<User,Long>, JpaSpecificationExecutor<User> {
+
    Optional<User> findByEmail(String email);
 
    @EntityGraph(attributePaths = {"role"})
    Optional<User> findById(Long id);
 
-   @Query("SELECT u FROM User u WHERE u.role.name = :roleEnum")
-   Optional<User> findByRole(@Param("roleEnum") RoleEnum roleEnum);
+   @Query("SELECT u FROM User u WHERE u.role.id = :id")
+   Optional<User> findByRoleId(@Param("id") Long id);
 }

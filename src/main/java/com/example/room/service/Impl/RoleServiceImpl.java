@@ -73,7 +73,7 @@ public class RoleServiceImpl implements RoleService {
         Role role = roleRepository.findById(id).orElseThrow(
                 ()-> new ResourceNotFoundException("Vai trò không tồn tại")
         );
-        role.setDeleted(Boolean.FALSE);
+        role.setDeleted(Boolean.TRUE);
         roleRepository.save(role);
         return BaseResponse.<String>builder()
                 .code(204)

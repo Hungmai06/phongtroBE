@@ -107,10 +107,11 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id).orElseThrow(
                 ()-> new ResourceNotFoundException("Người dùng không tồn tại")
         );
-        user.setDeleted(Boolean.FALSE);
+        user.setDeleted(Boolean.TRUE);
         userRepository.save(user);
         return BaseResponse.<String>builder()
                 .message("Xóa user")
+                .code(204)
                 .data("Xóa người dùng thành công")
                 .build();
     }
@@ -153,6 +154,10 @@ public class UserServiceImpl implements UserService {
         user.setRole(role);
         userRepository.save(user);
         emailService.sendRegisterSuccessEmail(user.getEmail(), user.getFullName());
-        return null;
+        return BaseResponse.<UserResponse>builder()
+                .code(200)
+                .data(userMapper.toResponse(user))
+                .message("Cập nhật vai trò  người dùng")
+                .build();
     }
 }

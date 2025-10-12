@@ -27,7 +27,7 @@ public class EmailServiceImpl implements EmailService {
 
         Context context = new Context();
         context.setVariable("fullName", fullName);
-
+        context.setVariable("email", email);
         String htmlContent = templateEngine.process("register-success",context);
 
         helper.setTo(fromEmail);
