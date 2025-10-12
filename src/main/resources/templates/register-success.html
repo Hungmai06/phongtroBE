@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Đăng ký thành công</title>
+    <style>
+        body {
+          font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+          background-color: #f3f6fb;
+          margin: 0;
+          padding: 30px 10px;
+          color: #333;
+        }
+        .container {
+          max-width: 600px;
+          margin: auto;
+          background: #ffffff;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+          background: linear-gradient(135deg, #16a085, #2ecc71);
+          color: #fff;
+          padding: 20px 24px;
+          font-size: 22px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+        .content {
+          padding: 28px 24px;
+          line-height: 1.6;
+          color: #374151;
+        }
+        .info-box {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 16px;
+          margin: 24px 0;
+        }
+        .info-box p {
+          margin: 6px 0;
+        }
+        .button {
+          display: inline-block;
+          text-decoration: none;
+          background: linear-gradient(90deg, #16a085, #2ecc71);
+          color: #ffffff;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 600;
+          letter-spacing: 0.3px;
+          box-shadow: 0 2px 6px rgba(22, 160, 133, 0.3);
+          transition: all 0.2s ease-in-out;
+        }
+        .button:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+        .footer {
+          background: #f9fafb;
+          padding: 16px;
+          font-size: 13px;
+          color: #6b7280;
+          text-align: center;
+          border-top: 1px solid #e5e7eb;
+        }
+        .footer a {
+          color: #16a085;
+          text-decoration: none;
+          font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">HỆ THỐNG QUẢN LÝ NHÀ TRỌ</div>
+    <div class="content">
+        <p>Xin chào <b th:text="${fullName}">Nguyễn Văn A</b>,</p>
+        <p>Chúc mừng bạn đã đăng ký làm <b>Chủ trọ</b> trên hệ thống của chúng tôi!</p>
+        <p>Tài khoản của bạn đã được kích hoạt thành công và sẵn sàng để sử dụng.</p>
+
+        <div class="info-box">
+            <p><b>Thông tin tài khoản:</b></p>
+            <p>Email: <span th:text="${email}">example@gmail.com</span></p>
+            <p>Vai trò: <span>Chủ trọ</span></p>
+        </div>
+
+        <p style="text-align:center;">
+            <a href="https://your-domain.com/login" class="button">Đăng nhập ngay</a>
+        </p>
+
+        <p style="font-size: 15px; color: #4b5563; margin-top: 24px;">
+            Nếu bạn không thực hiện hành động này, vui lòng liên hệ với bộ phận hỗ trợ qua email:
+            <a href="mailto:support@your-domain.com">support@your-domain.com</a>
+        </p>
+    </div>
+
+    <div class="footer">
+        © <span th:text="${year}">2025</span> Hệ thống Quản lý Nhà trọ · Mọi quyền được bảo lưu.
+    </div>
+</div>
+</body>
+</html>

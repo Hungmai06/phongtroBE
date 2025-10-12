@@ -29,12 +29,12 @@ import java.util.UUID;
 @MappedSuperclass
 public class BaseEntity implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @Column(name = "deleted")
-    private Boolean deleted = Boolean.FALSE;
+    private Boolean deleted = Boolean.TRUE;
 
     @Column(name = "version")
     @Version
