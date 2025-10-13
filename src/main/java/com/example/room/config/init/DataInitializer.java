@@ -7,12 +7,10 @@ import com.example.room.repository.UserRepository;
 import com.example.room.utils.Enums.GenderEnum;
 import com.example.room.utils.Enums.RoleEnum;
 import com.example.room.utils.PasswordUtil;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 

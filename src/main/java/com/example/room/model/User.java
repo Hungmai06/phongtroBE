@@ -1,6 +1,7 @@
 package com.example.room.model;
 
 import com.example.room.utils.Enums.GenderEnum;
+import com.example.room.utils.Enums.RoleEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,7 +20,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Where;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 
 @Getter
@@ -30,7 +36,7 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Where(clause = "deleted = false")
-public class User extends BaseEntity{
+public class User extends BaseEntity implements UserDetails{
 
     @Column(unique = true, nullable = false,length = 128)
     private String email;
@@ -63,4 +69,35 @@ public class User extends BaseEntity{
 
     @OneToMany(mappedBy = "user")
     private List<Booking> bookings;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        RoleEnum roleName = role.getName();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + roleName));
+    }
+
+    @Override
+    public String getUsername() {
+        return "";
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
 }
