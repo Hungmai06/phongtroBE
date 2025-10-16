@@ -2,6 +2,9 @@ package com.example.room.model;
 
 import com.example.room.utils.Enums.GenderEnum;
 import com.example.room.utils.Enums.RoleEnum;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -39,12 +42,13 @@ import java.util.List;
 public class User extends BaseEntity implements UserDetails{
 
     @Column(unique = true, nullable = false,length = 128)
+
     private String email;
 
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    @Column(name = "phone" ,length = 15)
+    @Column(name = "phone", length = 15)
     private String phone;
 
     @Column(nullable = false, length = 64)
@@ -60,15 +64,17 @@ public class User extends BaseEntity implements UserDetails{
     @Column(name = "citizen_id")
     private String citizenId;
 
-    @ManyToOne( fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @OneToOne(mappedBy = "owner")
-    private Room room;
+    @OneToMany(mappedBy = "owner")
+    @JsonIgnore
+    private List<Room> rooms;
 
     @OneToMany(mappedBy = "user")
     private List<Booking> bookings;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         RoleEnum roleName = role.getName();

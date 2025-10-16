@@ -1,22 +1,13 @@
 package com.example.room.model;
 
-import com.example.room.utils.Enums.PaymentMethodEnum;
+import com.example.room.utils.Enums.PaymentMethod;
 import com.example.room.utils.Enums.PaymentStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.annotations.Cache;
+import com.example.room.utils.Enums.PaymentType;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.Where;
 
+import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -26,28 +17,40 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "payment")
 @Where(clause = "deleted = false")
-public class Payment extends BaseEntity{
-    @Column(name = "amount",precision = 12, scale = 2)
+@Table(name = "payments")
+public class Payment extends BaseEntity {
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", nullable = false)
+    private PaymentType paymentType;
+
+    @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
-    @Enumerated(value = EnumType.STRING)
-    @Column(name = "payment_method",nullable = false)
-    private PaymentMethodEnum paymentMethod;
+    @Column(name = "description", length = 255)
+    private String description;
 
-    @Enumerated(value = EnumType.STRING)
-    @Column(name = "payment_status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus;
 
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;
-
-    @ManyToOne
-    @JoinColumn(name = "booking_id")
-    private Booking booking;
-
-    @ManyToOne
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")
     private Invoice invoice;
+
+    @ManyToOne
+    @JoinColumn(name = "contract_id")
+    private Contract contract; 
 }

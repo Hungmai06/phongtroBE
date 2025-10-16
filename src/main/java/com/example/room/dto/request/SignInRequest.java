@@ -18,3 +18,4 @@ public class SignInRequest {
     private String deviceToken;
     private String versionApp;
 }
+
