@@ -2,6 +2,7 @@ package com.example.room.model;
 
 import com.example.room.utils.Enums.GenderEnum;
 import com.example.room.utils.Enums.RoleEnum;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
@@ -38,9 +39,10 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Where(clause = "deleted = false")
-public class User extends BaseEntity implements UserDetails {
+public class User extends BaseEntity implements UserDetails{
 
-    @Column(unique = true, nullable = false, length = 128)
+    @Column(unique = true, nullable = false,length = 128)
+
     private String email;
 
     @Column(name = "full_name", nullable = false, length = 100)
@@ -75,23 +77,33 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.getName().name()));
+        RoleEnum roleName = role.getName();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + roleName));
     }
 
     @Override
     public String getUsername() {
-        return this.email; // sử dụng email làm định danh
+        return "";
     }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return true;
+    }
+
 }
