@@ -18,9 +18,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Where;
+import jakarta.persistence.CascadeType;
+import org.hibernate.annotations.SQLDelete;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -29,6 +33,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@SQLDelete(sql = "UPDATE booking SET deleted = true WHERE id = ?")
 @Where(clause = "deleted = false")
 @Table(name = "bookings")
 public class Booking extends BaseEntity{
@@ -41,6 +46,9 @@ public class Booking extends BaseEntity{
     @Column(name = "total_price")
     private BigDecimal totalPrice;
 
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted = Boolean.FALSE;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private BookingStatus status = BookingStatus.PENDING;
@@ -52,8 +60,13 @@ public class Booking extends BaseEntity{
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+    
+    @Column(name = "expiration_date")
+    private LocalDateTime expirationDate;
 
-    @OneToMany(mappedBy = "booking")
-    private List<Payment> payments;
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Payment> payments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Contract> contracts = new ArrayList<>();
 }

@@ -5,6 +5,7 @@ import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.RoomCreateRequest;
 import com.example.room.dto.request.RoomUpdateRequest;
 import com.example.room.dto.response.RoomResponse;
+import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.RoomMapper;
 import com.example.room.model.Image;
@@ -19,9 +20,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.room.utils.Enums.RoleEnum;
+import com.example.room.utils.Enums.RoomStatus;
+import com.example.room.model.Image;
+import com.example.room.service.IStorageService;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Arrays;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,12 +43,16 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final RoomMapper roomMapper;
+    private final IStorageService storageService;
 
     @Override
     @Transactional
-    public BaseResponse<RoomResponse> createRoom(RoomCreateRequest request) {
-        User owner = userRepository.findById(request.getOwnerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ trọ với ID: " + request.getOwnerId()));
+    public RoomResponse createRoom(RoomCreateRequest request) {
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (!currentUser.getRole().getName().name().equals(RoleEnum.OWNER.name())) {
+            throw new ForBiddenException("Chỉ chủ nhà mới có quyền tạo phòng trọ");
+        }
 
         Room room = Room.builder()
                 .name(request.getName())
@@ -50,30 +63,26 @@ public class RoomServiceImpl implements RoomService {
                 .capacity(request.getCapacity())
                 .address(request.getAddress())
                 .utilities(request.getUtilities())
-                .status(true) // Mặc định là còn phòng
-                .owner(owner)
+                .status(RoomStatus.AVAILABLE)
+                .owner(currentUser)
                 .build();
-
-        // Xử lý danh sách ảnh
         if (request.getImages() != null && !request.getImages().isEmpty()) {
-            List<Image> imageEntities = request.getImages().stream()
-                    .map(imageUrl -> Image.builder().imageUrl(imageUrl).room(room).build())
-                    .collect(Collectors.toList());
-            room.setImages(imageEntities);
+        List<Image> imageEntities = request.getImages().stream()
+                .map(url -> Image.builder()
+                        .imageUrl(url)
+                        .room(room)
+                        .build())
+                .toList();
+        room.setImages(imageEntities);
         }
+        Room savedRoom = roomRepository.save(room);
 
-        roomRepository.save(room);
-
-        return BaseResponse.<RoomResponse>builder()
-                .code(201)
-                .message("Tạo phòng trọ thành công")
-                .data(roomMapper.toResponse(room))
-                .build();
+        return roomMapper.toResponse(savedRoom);
     }
 
     @Override
     @Transactional
-    public BaseResponse<RoomResponse> updateRoom(Long id, RoomUpdateRequest request) {
+    public RoomResponse updateRoom(Long id, RoomUpdateRequest request) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với ID: " + id));
 
@@ -104,41 +113,29 @@ public class RoomServiceImpl implements RoomService {
             room.getImages().addAll(newImages);
         }
 
-        roomRepository.save(room);
-
-        return BaseResponse.<RoomResponse>builder()
-                .code(200)
-                .message("Cập nhật thông tin phòng thành công")
-                .data(roomMapper.toResponse(room))
-                .build();
+        Room updatedRoom = roomRepository.save(room);
+        
+        // Trả về trực tiếp đối tượng đã được map
+        return roomMapper.toResponse(updatedRoom);
     }
     
     @Override
-    public BaseResponse<RoomResponse> getRoomById(Long id) {
+    public RoomResponse getRoomById(Long id) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với ID: " + id));
 
-        return BaseResponse.<RoomResponse>builder()
-                .code(200)
-                .message("Lấy thông tin phòng thành công")
-                .data(roomMapper.toResponse(room))
-                .build();
+        return roomMapper.toResponse(room);
     }
 
     @Override
     @Transactional
-    public BaseResponse<String> deleteRoom(Long id) {
+    public void deleteRoom(Long id) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với ID: " + id));
 
         room.setDeleted(true); // Đánh dấu xóa mềm
         roomRepository.save(room);
 
-        return BaseResponse.<String>builder()
-                .code(200)
-                .message("Xóa phòng thành công")
-                .data("Đã xóa phòng với ID: " + id)
-                .build();
     }
 
     @Override

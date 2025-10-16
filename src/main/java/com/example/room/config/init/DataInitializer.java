@@ -12,7 +12,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 @Component
@@ -26,32 +25,19 @@ public class DataInitializer {
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
 
-        initRoles();
-
-        initAdminUser();
-    }
-
-    private void initRoles() {
-        Arrays.stream(RoleEnum.values()).forEach(roleEnum -> {
-            Optional<Role> optionalRole = roleRepository.findByName(roleEnum);
-            if (optionalRole.isEmpty()) {
-                Role role = Role.builder()
-                        .name(roleEnum)
-                        .description("Vai trò " + roleEnum.name())
-                        .build();
-                roleRepository.save(role);
-            }
-        });
-    }
-
-    private void initAdminUser() {
         String email = "admin@gmail.com";
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if (optionalUser.isPresent()) {
-            return; 
+            return;
         }
 
-        Role adminRole = roleRepository.findByName(RoleEnum.ADMIN).get();
+        Role role = roleRepository.findByName(RoleEnum.ADMIN)
+                .orElseGet(() -> {
+                    return roleRepository.save(Role.builder()
+                            .name(RoleEnum.ADMIN)
+                            .description("Quyền quản trị hệ thống")
+                            .build());
+                });
 
         User admin = User.builder()
                 .address("admin")
@@ -61,7 +47,7 @@ public class DataInitializer {
                 .citizenId("098765456782")
                 .gender(GenderEnum.FEMALE)
                 .password(passwordUtil.encode("admin"))
-                .role(adminRole)
+                .role(role)
                 .build();
 
         userRepository.save(admin);

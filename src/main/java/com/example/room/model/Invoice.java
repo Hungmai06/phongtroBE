@@ -1,47 +1,49 @@
 package com.example.room.model;
 
 import com.example.room.utils.Enums.InvoiceStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.annotations.Where;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
-@Getter
-@Setter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Where(clause = "deleted = false")
-@Table(name = "invoice")
-public class Invoice extends BaseEntity{
-    @Column(name = "invoice_number",nullable = false)
+@Table(name = "invoices")
+public class Invoice extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
     private String invoiceNumber;
 
-    @Column(name = "issued_date",nullable = false)
-    private LocalDateTime issuedDate;
+    @Column(nullable = false)
+    private LocalDateTime issueDate;
 
-    @Column(name = "file_url")
-    private String fileUrl;
+    @Column(nullable = false)
+    private BigDecimal totalAmount;
 
-    @Enumerated(value = EnumType.STRING)
-    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private InvoiceStatus status;
 
-    @OneToMany(mappedBy = "invoice")
-    private List<Payment> payments;
+    @OneToOne
+    @JoinColumn(name = "payment_id", referencedColumnName = "id")
+    private Payment payment;
 
-    @OneToMany(mappedBy = "invoice")
-    private List<InvoiceDetails> invoiceDetails;
+    @ManyToOne
+    @JoinColumn(name = "contract_id", referencedColumnName = "id")
+    private Contract contract;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private User user;
 }

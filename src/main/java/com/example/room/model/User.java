@@ -1,6 +1,9 @@
 package com.example.room.model;
 
 import com.example.room.utils.Enums.GenderEnum;
+import com.example.room.utils.Enums.RoleEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,7 +22,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Where;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 
 @Getter
@@ -30,15 +38,15 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Where(clause = "deleted = false")
-public class User extends BaseEntity{
+public class User extends BaseEntity implements UserDetails {
 
-    @Column(unique = true, nullable = false,length = 128)
+    @Column(unique = true, nullable = false, length = 128)
     private String email;
 
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    @Column(name = "phone" ,length = 15)
+    @Column(name = "phone", length = 15)
     private String phone;
 
     @Column(nullable = false, length = 64)
@@ -54,13 +62,36 @@ public class User extends BaseEntity{
     @Column(name = "citizen_id")
     private String citizenId;
 
-    @ManyToOne( fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @OneToOne(mappedBy = "owner")
-    private Room room;
+    @OneToMany(mappedBy = "owner")
+    @JsonIgnore
+    private List<Room> rooms;
 
     @OneToMany(mappedBy = "user")
     private List<Booking> bookings;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.getName().name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email; // sử dụng email làm định danh
+    }
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }
 }

@@ -1,7 +1,6 @@
 spring:
   application:
     name: room
-
   datasource:
     url: jdbc:postgresql://localhost:5432/room
     username: admin
@@ -16,6 +15,7 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -33,6 +33,7 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+
 springdoc:
   api-docs:
     enabled: true
@@ -45,5 +46,19 @@ openapi:
     title: My API Service
     version: 1.0.0
 
+jwt:
+  expiryMinute: ${JWT_EXPIRY_MINUTE:5}
+  expiryDay: ${JWT_EXPIRY_DAY:14}
+  accessKey: ${JWT_ACCESS_KEY:Z3YmEphCpEaLM14gjwN3WWMsNkUJoncebqs6ZIElS0M=}
+  refreshKey: ${JWT_REFRESH_KEY:YzWtBjqYoRn5XX+AUkf5iSXGazL5U2LJF3cjR1Ruc3k=}
 
+servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  booking:
+    expiration-hours: 24
 

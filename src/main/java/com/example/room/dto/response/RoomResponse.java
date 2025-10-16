@@ -3,6 +3,7 @@ package com.example.room.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import com.example.room.utils.Enums.RoomStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,6 +22,6 @@ public class RoomResponse {
     private Integer capacity;
     private String address;
     private String utilities;
-    private Boolean status;
+    private RoomStatus status;
     private String ownerName;
 }

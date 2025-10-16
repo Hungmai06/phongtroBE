@@ -1,9 +1,11 @@
 package com.example.room.service.Impl;
 
 import com.example.room.service.IStorageService;
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -16,6 +18,7 @@ import java.util.UUID;
 public class ImageStorageService implements IStorageService {
     private final Path storageFolder = Paths.get("uploads");
 
+    // Constructor: Tự động tạo thư mục khi khởi động service
     public ImageStorageService() {
         try {
             Files.createDirectories(storageFolder);
@@ -24,37 +27,54 @@ public class ImageStorageService implements IStorageService {
         }
     }
 
+    private boolean isImageFile(MultipartFile file) {
+        String extension = FilenameUtils.getExtension(file.getOriginalFilename());
+        return extension != null && (
+               extension.equalsIgnoreCase("png") ||
+               extension.equalsIgnoreCase("jpg") ||
+               extension.equalsIgnoreCase("jpeg") ||
+               extension.equalsIgnoreCase("bmp")
+        );
+    }
+
     @Override
     public String storeFile(MultipartFile file) {
         try {
             if (file.isEmpty()) {
                 throw new RuntimeException("Không thể lưu file rỗng.");
             }
-            // Tạo tên file ngẫu nhiên để tránh trùng lặp
-            String fileExtension = getFileExtension(file.getOriginalFilename());
+            if (!isImageFile(file)) {
+                throw new RuntimeException("Chỉ có thể upload file ảnh (png, jpg, jpeg, bmp).");
+            }
+
+            String fileExtension = FilenameUtils.getExtension(file.getOriginalFilename());
             String generatedFileName = UUID.randomUUID().toString().replace("-", "") + "." + fileExtension;
 
-            Path destinationFilePath = this.storageFolder.resolve(Paths.get(generatedFileName)).normalize().toAbsolutePath();
+            Path destinationFilePath = this.storageFolder.resolve(Paths.get(generatedFileName))
+                    .normalize()
+                    .toAbsolutePath();
 
-            // Lưu file
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, destinationFilePath, StandardCopyOption.REPLACE_EXISTING);
             }
-            return generatedFileName; // Trả về tên file đã lưu
+
+            // Trả về đường dẫn public
+            return "/uploads/" + generatedFileName;
+
         } catch (IOException exception) {
             throw new RuntimeException("Lỗi khi lưu file.", exception);
         }
     }
-
+    
     @Override
     public void deleteFile(String fileName) {
         try {
-            Path filePath = storageFolder.resolve(Paths.get(fileName)).normalize().toAbsolutePath();
+            Path filePath = this.storageFolder.resolve(fileName).normalize();
             Files.deleteIfExists(filePath);
-        } catch (IOException exception) {
-            throw new RuntimeException("Lỗi khi xóa file: " + fileName, exception);
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể xóa file: " + fileName, e);
+        }
     }
-}
 
     private String getFileExtension(String fileName) {
         int lastIndexOf = fileName.lastIndexOf(".");
