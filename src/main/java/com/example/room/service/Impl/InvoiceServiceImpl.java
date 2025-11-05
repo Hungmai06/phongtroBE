@@ -1,32 +1,34 @@
 package com.example.room.service.Impl;
 
+import com.example.room.dto.BaseResponse;
+import com.example.room.dto.PageResponse;
 import com.example.room.dto.response.InvoiceResponse;
+import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.InvoiceMapper;
 import com.example.room.model.Contract;
 import com.example.room.model.Invoice;
 import com.example.room.model.Payment;
+import com.example.room.model.User;
 import com.example.room.repository.ContractRepository;
 import com.example.room.repository.InvoiceRepository;
+import com.example.room.repository.PaymentRepository;
+import com.example.room.service.EmailService;
 import com.example.room.service.InvoiceService;
-import com.example.room.utils.Enums.ContractStatus;
+import com.example.room.service.PdfGeneratorService;
 import com.example.room.utils.Enums.InvoiceStatus;
 import com.example.room.utils.Enums.RoleEnum;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.access.AccessDeniedException;
-import com.example.room.exception.ForBiddenException;
-import com.example.room.model.User;
+import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,64 +42,90 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final ContractRepository contractRepository;
+    private final PaymentRepository paymentRepository;
     private final InvoiceMapper invoiceMapper;
+    private final PdfGeneratorService pdfGeneratorService;
+    private final EmailService emailService;
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public Invoice createInvoiceRecord(Payment payment) {
-        // --- BẮT ĐẦU SỬA ĐỔI LOGIC ---
+    @Transactional
+    public BaseResponse<InvoiceResponse> createInvoiceRecord(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + paymentId));
 
-        // Bước 1: Kiểm tra xem hóa đơn đã tồn tại cho thanh toán này chưa
-        if (invoiceRepository.existsByPaymentId(payment.getId())) {
-            log.warn("Hóa đơn cho payment ID {} đã tồn tại. Bỏ qua việc tạo mới.", payment.getId());
-            return null; 
+        Optional<Invoice> existingInvoice = invoiceRepository.findByPaymentId(payment.getId());
+        if (existingInvoice.isPresent()) {
+            InvoiceResponse existingResponse = invoiceMapper.toResponse(existingInvoice.get());
+            return BaseResponse.<InvoiceResponse>builder()
+                    .code(201)
+                    .message("Invoice already exists for this payment.")
+                    .data(existingResponse)
+                    .build();
         }
 
-        // Bước 2: Tìm hợp đồng (không bắt buộc phải ACTIVE)
-        Optional<Contract> contractOptional = contractRepository.findByBooking_Id(payment.getBooking().getId())
-                .stream()
-                .findFirst(); // Lấy hợp đồng bất kỳ liên quan đến booking
+        Contract contract = contractRepository.findByBookingId(payment.getBooking().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Contract not found for booking ID: " + payment.getBooking().getId()));
 
-        Invoice invoice = Invoice.builder()
+        Invoice newInvoice = Invoice.builder()
                 .invoiceNumber(generateInvoiceNumber())
                 .issueDate(LocalDateTime.now())
                 .totalAmount(payment.getAmount())
                 .status(InvoiceStatus.CREATED)
                 .payment(payment)
-                .contract(contractOptional.orElse(null)) // Gán hợp đồng nếu tìm thấy, ngược lại gán null
+                .contract(contract)
                 .user(payment.getBooking().getUser())
                 .build();
 
-        invoiceRepository.save(invoice);
-        log.info("✅ Hóa đơn mới được tạo: {}", invoice.getInvoiceNumber());
+        Invoice savedInvoice = invoiceRepository.save(newInvoice);
 
-        // Gửi hóa đơn bất đồng bộ
-        processAndSendInvoice(invoice.getId());
-        return invoice;
+        processAndSendInvoice(savedInvoice.getId());
+
+        InvoiceResponse response = invoiceMapper.toResponse(savedInvoice);
+        return BaseResponse.<InvoiceResponse>builder()
+                .code(201)
+                .message("Invoice created successfully.")
+                .data(response)
+                .build();
     }
+
 
     @Async
     @Override
     public void processAndSendInvoice(Long invoiceId) {
         try {
-            // Tìm invoice ngay lập tức thay vì đợi
             Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found for async processing: " + invoiceId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Invoice not found for async processing: " + invoiceId));
 
-            log.info("Bắt đầu xử lý và gửi hóa đơn #{}...", invoice.getInvoiceNumber());
-            Thread.sleep(3000); // Giả lập thời gian gửi mail hoặc tạo PDF
+            String outputPath = System.getProperty("user.dir") + "/uploads/invoices/invoice-" + invoice.getInvoiceNumber() + ".pdf";
+            Context context = new Context();
+            context.setVariable("invoiceNumber", invoice.getInvoiceNumber());
+            context.setVariable("issueDate", invoice.getIssueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            context.setVariable("customerName", invoice.getUser().getFullName());
+            context.setVariable("customerEmail", invoice.getUser().getEmail());
+            context.setVariable("customerPhone", invoice.getUser().getPhone());
+            context.setVariable("roomName", invoice.getContract().getBooking().getRoom().getName());
+            context.setVariable("roomAddress", invoice.getContract().getBooking().getRoom().getAddress());
+            context.setVariable("paymentType", invoice.getPayment().getPaymentType().name());
+            context.setVariable("description", invoice.getPayment().getDescription());
+            context.setVariable("amount", invoice.getPayment().getAmount());
+            context.setVariable("paymentDate", invoice.getPayment().getPaymentDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            context.setVariable("totalAmount", invoice.getTotalAmount());
 
-            // TODO: Logic tạo PDF và gửi Email
-            
+            pdfGeneratorService.generatePdf("invoice-template", context, outputPath);
+
+            String subject = "Hóa đơn thanh toán: " + invoice.getInvoiceNumber();
+            String body = "Kính gửi " + invoice.getUser().getFullName() + ",\n\n" +
+                    "Vui lòng tìm hóa đơn thanh toán đính kèm.";
+            emailService.sendEmailWithAttachment(invoice.getUser().getEmail(), subject, body, outputPath);
+
             invoice.setStatus(InvoiceStatus.SENT);
             invoiceRepository.save(invoice);
-            log.info("📨 Hóa đơn #{} đã được gửi thành công đến người dùng.", invoice.getInvoiceNumber());
 
-        } catch (InterruptedException e) {
-            log.error("Luồng xử lý hóa đơn bị gián đoạn.", e);
-            Thread.currentThread().interrupt();
+
         } catch (ResourceNotFoundException e) {
             log.error("Không thể xử lý hóa đơn không đồng bộ: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Lỗi khi xử lý hóa đơn: {}", e.getMessage(), e);
         }
     }
 
@@ -108,7 +136,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public Page<InvoiceResponse> getInvoices(Pageable pageable) {
+    public PageResponse<InvoiceResponse> getInvoices(Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(page, size);
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         boolean isAdmin = currentUser.getRole().getName().name().equals(RoleEnum.ADMIN.name());
@@ -127,15 +156,27 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new ForBiddenException("Unauthorized role");
         }
 
-        return invoices.map(invoiceMapper::toResponse);
+        return PageResponse.<InvoiceResponse>builder()
+                .pageNumber(invoices.getNumber())
+                .pageSize(invoices.getSize())
+                .totalElements(invoices.getTotalElements())
+                .totalPages(invoices.getTotalPages())
+                .code(200)
+                .message("Lấy danh sách hóa đơn thành công")
+                .data(invoices.stream().map(invoiceMapper::toResponse).toList())
+                .build();
     }
 
     @Override
-    public InvoiceResponse getInvoiceById(Long id) {
+    public BaseResponse<InvoiceResponse> getInvoiceById(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hóa đơn ID: " + id));
 
-        return invoiceMapper.toResponse(invoice);
+        return BaseResponse.<InvoiceResponse>builder()
+                .code(200)
+                .data(invoiceMapper.toResponse(invoice))
+                .message("Lấy thông tin hóa đơn thành công")
+                .build();
     }
 
     @Override
@@ -171,6 +212,4 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         log.warn("⚠️ Hóa đơn #{} đã bị hủy bởi ADMIN.", invoice.getInvoiceNumber());
     }
-   
-
 }

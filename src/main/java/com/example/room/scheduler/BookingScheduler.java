@@ -19,8 +19,8 @@ public class BookingScheduler {
      */
     @Scheduled(cron = "0 */5 * * * ?")
     public void runCancelExpiredBookings() {
-        log.info("⏰ Bắt đầu tiến trình quét và hủy booking quá hạn...");
+        log.info(" Bắt đầu tiến trình quét và hủy booking quá hạn...");
         bookingService.cancelExpiredBookings();
-        log.info("✅ Hoàn thành tiến trình hủy booking quá hạn.");
+        log.info(" Hoàn thành tiến trình hủy booking quá hạn.");
     }
 }

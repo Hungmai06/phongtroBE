@@ -1,6 +1,9 @@
 package com.example.room.service.Impl;
 
+import com.example.room.dto.BaseResponse;
+import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.ContractUpdateRequest;
+import com.example.room.dto.request.ContractEmailRequest;
 import com.example.room.dto.response.ContractResponse;
 import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.ResourceNotFoundException;
@@ -8,8 +11,11 @@ import com.example.room.mapper.ContractMapper;
 import com.example.room.model.Contract;
 import com.example.room.model.Room;
 import com.example.room.model.User;
+import com.example.room.repository.BookingRepository;
 import com.example.room.repository.ContractRepository;
 import com.example.room.service.ContractService;
+import com.example.room.service.EmailService;
+import com.example.room.service.PdfGeneratorService;
 import com.example.room.utils.Enums.ContractStatus;
 import com.example.room.utils.Enums.RoleEnum;
 import com.example.room.utils.Enums.RoomStatus;
@@ -18,25 +24,34 @@ import com.example.room.repository.RoomRepository;
 import jakarta.transaction.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.example.room.model.Booking; 
-import org.springframework.security.access.AccessDeniedException;
-import com.example.room.utils.Enums.ContractStatus; 
+import org.thymeleaf.context.Context;
+
 import java.time.LocalDateTime;
+import jakarta.mail.MessagingException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ContractServiceImpl implements ContractService {
 
     private final ContractRepository contractRepository;
     private final ContractMapper contractMapper;
     private final RoomRepository roomRepository;
+    private final BookingRepository bookingRepository;
+    private final PdfGeneratorService pdfGeneratorService;
+    private final EmailService emailService;
 
     @Override
-    public Page<ContractResponse> getAllContracts(Pageable pageable) {
+    public PageResponse<ContractResponse> getAllContracts(Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(page, size);
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         boolean isAdmin = currentUser.getRole().getName().name().equals(RoleEnum.ADMIN.name());
@@ -59,20 +74,32 @@ public class ContractServiceImpl implements ContractService {
             throw new ForBiddenException("Your role is not authorized to access this resource.");
         }
 
-        return contracts.map(contractMapper::toResponse);
+        return PageResponse.<ContractResponse>builder()
+                .data(contracts.stream().map(contractMapper::toResponse).toList())
+                .pageNumber(contracts.getNumber())
+                .pageSize(contracts.getSize())
+                .totalElements(contracts.getTotalElements())
+                .totalPages(contracts.getTotalPages())
+                .code(200)
+                .message("Get all contracts successfully")
+                .build();
     }
 
     @Override
-    public ContractResponse getContractById(long id) {
+    public BaseResponse<ContractResponse> getContractById(long id) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
 
-        return contractMapper.toResponse(contract);
+        return BaseResponse.<ContractResponse>builder()
+                .code(200)
+                .message("Lấy thông tin hợp đồng thành công")
+                .data(contractMapper.toResponse(contract))
+                .build();
     }
 
     @Override
     @Transactional
-    public ContractResponse updateContract(long id, ContractUpdateRequest request) {
+    public BaseResponse<ContractResponse> updateContract(long id, ContractUpdateRequest request) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
         
@@ -85,7 +112,11 @@ public class ContractServiceImpl implements ContractService {
         }
 
         Contract updatedContract = contractRepository.save(contract);
-        return contractMapper.toResponse(updatedContract);
+        return BaseResponse.<ContractResponse>builder()
+                .code(200)
+                .message("Cập nhật hợp đồng thành công")
+                .data(contractMapper.toResponse(updatedContract))
+                .build();
     }
 
     @Override
@@ -106,27 +137,81 @@ public class ContractServiceImpl implements ContractService {
     }
     @Override
     @Transactional
-    public ContractResponse createContractFromBooking(Booking booking) {
-        // TODO: Tích hợp logic sinh file PDF và upload lên cloud ở đây
-        // Tạm thời giả lập một đường dẫn file
-        String pdfFileUrl = "/uploads/contracts/contract-booking-" + booking.getId() + ".pdf";
+    public BaseResponse<ContractResponse> createContractFromBooking(Long bookingId) {
 
-        Contract newContract = Contract.builder()
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        Room room = booking.getRoom();
+        User renter = booking.getUser();
+        User owner = room.getOwner();
+
+        Contract contract = Contract.builder()
                 .booking(booking)
-                .startDate(booking.getStartDate().atStartOfDay()) 
-                .endDate(booking.getEndDate().atStartOfDay())
+                .startDate(booking.getStartDate())
+                .endDate(booking.getEndDate())
                 .status(ContractStatus.ACTIVE)
-                .contractFile(pdfFileUrl)
                 .build();
 
-        Contract savedContract = contractRepository.save(newContract);
-        Room room = booking.getRoom();
+        // Save contract first so ID is generated
+        Contract savedContract = contractRepository.save(contract);
+
+        // Prepare Thymeleaf context for PDF
+        Context context = new Context();
+        context.setVariable("contract", savedContract);
+        context.setVariable("owner", owner);
+        context.setVariable("renter", renter);
+        context.setVariable("room", room);
+
+        // Generate output path using saved ID
+        String outputPath = System.getProperty("user.dir") + "/uploads/contracts/contract-" + savedContract.getId() + ".pdf";
+        pdfGeneratorService.generatePdf("contract-template", context, outputPath);
+
+        // Lưu lại đường dẫn file (public path)
+        String publicPath = "/uploads/contracts/contract-" + savedContract.getId() + ".pdf";
+        savedContract.setContractFile(publicPath);
+        contractRepository.save(savedContract);
+
+        // Update room status
         room.setStatus(RoomStatus.RENTED);
         roomRepository.save(room);
 
-        // TODO: Gửi email cho Owner và Renter kèm file PDF
+        // Send email to renter and owner with attachment
+        ContractEmailRequest emailReq = ContractEmailRequest.builder()
+                .recipientName(renter.getFullName())
+                .contractId(savedContract.getId())
+                .startDate(savedContract.getStartDate())
+                .endDate(savedContract.getEndDate())
+                .roomName(room.getName())
+                .roomAddress(room.getAddress())
+                .price(room.getPrice())
+                .ownerName(owner.getFullName())
+                .ownerEmail(owner.getEmail())
+                .ownerPhone(owner.getPhone())
+                .renterName(renter.getFullName())
+                .renterEmail(renter.getEmail())
+                .renterPhone(renter.getPhone())
+                .contractUrl(publicPath)
+                .year(LocalDateTime.now().getYear())
+                .build();
 
-        return contractMapper.toResponse(savedContract);
+        try {
+            emailService.sendContractInfoWithAttachment(emailReq, renter.getEmail(), outputPath);
+        } catch (MessagingException e) {
+            log.error("Failed to send contract email to renter {}: {}", renter.getEmail(), e.getMessage());
+        }
+
+
+        emailReq.setRecipientName(owner.getFullName());
+        try {
+            emailService.sendContractInfoWithAttachment(emailReq, owner.getEmail(), outputPath);
+        } catch (MessagingException e) {
+            log.error("Failed to send contract email to owner {}: {}", owner.getEmail(), e.getMessage());
+        }
+
+        return BaseResponse.<ContractResponse>builder()
+                .code(200)
+                .message("Tạo hợp đồng hợp đồng thành công")
+                .data(contractMapper.toResponse(savedContract))
+                .build();
     }
 
 }

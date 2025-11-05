@@ -8,6 +8,8 @@ import com.example.room.dto.response.PaymentResponse;
 import com.example.room.service.PaymentService;
 import com.example.room.utils.Enums.ContractStatus;
 import com.example.room.utils.Enums.PaymentType;
+import com.example.room.utils.Enums.PaymentMethod;
+import com.example.room.utils.Enums.PaymentStatus;
 import com.example.room.repository.ContractRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +22,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
@@ -69,9 +74,17 @@ public class PaymentController {
     @Operation(summary = "Lấy danh sách thanh toán")
     public ResponseEntity<PageResponse<PaymentResponse>> getAllPayments(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long bookingId,
+            @RequestParam(required = false) PaymentType paymentType,
+            @RequestParam(required = false) PaymentMethod paymentMethod,
+            @RequestParam(required = false) PaymentStatus paymentStatus,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime paymentDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAt
     ) {
-        PageResponse<PaymentResponse> paymentPage = paymentService.getAllPayments(page, size);
+        PageResponse<PaymentResponse> paymentPage = paymentService.getAllPayments(
+                page, size, bookingId, paymentType, paymentMethod, paymentStatus, paymentDate, createdAt
+        );
         return ResponseEntity.ok(paymentPage);
     }
 

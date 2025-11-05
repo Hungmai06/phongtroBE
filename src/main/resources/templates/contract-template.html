@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Page margin for PDF rendering */
+        @page {
+            margin: 2cm;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+        }
+
+        /* Container centered within page margins */
+        .container {
+            max-width: 720px; /* typical A4 printable width within 2cm margins */
+            margin: 0 auto;
+            padding: 0 12px; /* small inner padding so text doesn't touch edges */
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            line-height: 1.5;
+            font-size: 12pt;
+            color: #222;
+        }
+        header {
+            text-align: center;
+            margin: 8px 0 18px 0;
+        }
+        h1 {
+            margin: 0;
+            font-size: 18pt;
+            color: #2E86C1;
+            letter-spacing: 0.6px;
+        }
+        h3 {
+            margin: 18px 0 8px 0;
+            font-size: 12pt;
+            color: #111;
+        }
+        p {
+            margin: 6px 0;
+        }
+        .meta p { margin: 4px 0; }
+
+        table.info {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 11pt;
+        }
+        table.info th, table.info td {
+            border: 1px solid #e6e6e6; /* light border */
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.info th {
+            background: #fafafa;
+            width: 30%;
+            font-weight: 600;
+        }
+
+        ul {
+            margin: 8px 0 0 18px;
+        }
+
+        .signature {
+            margin-top: 36px;
+            width: 100%;
+        }
+        .signature table { width: 100%; border-collapse: collapse; }
+        .signature td {
+            border: none;
+            padding-top: 40px;
+            text-align: center;
+            vertical-align: top;
+            font-size: 11pt;
+        }
+
+        /* make sure long text wraps nicely */
+        td, th { word-wrap: break-word; }
+
+        /* small print for footer */
+        .footer {
+            margin-top: 18px;
+            font-size: 10pt;
+            color: #666;
+            text-align: center;
+        }
+
+        /* ensure printable colors and spacing */
+        @media print {
+            .container { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<header>
+    <h1>HỢP ĐỒNG THUÊ PHÒNG</h1>
+</header>
+
+<div class="meta">
+    <p>Số hợp đồng: <b th:text="${contract.id}">-</b></p>
+    <p>Ngày ký: <b th:text="${#dates.format(contract.startDate, 'dd/MM/yyyy')}">-</b></p>
+</div>
+
+<h3>1. Bên A (Chủ phòng)</h3>
+<p>Họ tên: <b th:text="${owner.fullName}">Owner Name</b></p>
+<p>Email: <span th:text="${owner.email}">owner@example.com</span></p>
+<p>Điện thoại: <span th:text="${owner.phone}">0123456789</span></p>
+
+<h3>2. Bên B (Người thuê)</h3>
+<p>Họ tên: <b th:text="${renter.fullName}">Renter Name</b></p>
+<p>Email: <span th:text="${renter.email}">renter@example.com</span></p>
+<p>Điện thoại: <span th:text="${renter.phone}">0987654321</span></p>
+
+<h3>3. Thông tin phòng thuê</h3>
+<table class="info">
+    <tr>
+        <th>Tên phòng</th>
+        <td th:text="${room.roomName}">Room Name</td>
+    </tr>
+    <tr>
+        <th>Địa chỉ</th>
+        <td th:text="${room.roomAddress}">Room Address</td>
+    </tr>
+    <tr>
+        <th>Giá thuê (VNĐ/tháng)</th>
+        <td th:text="${#numbers.formatInteger(room.pricePerMonth)}">0</td>
+    </tr>
+    <tr>
+        <th>Thời hạn thuê</th>
+        <td>
+            <span th:text="${#dates.format(contract.startDate, 'dd/MM/yyyy')}">Start</span>
+            &nbsp;đến&nbsp;
+            <span th:text="${#dates.format(contract.endDate, 'dd/MM/yyyy')}">End</span>
+        </td>
+    </tr>
+</table>
+
+<h3>4. Điều khoản chung</h3>
+<ul>
+    <li>Bên B có trách nhiệm thanh toán tiền thuê đúng hạn và giữ gìn tài sản.</li>
+    <li>Bên A có quyền kiểm tra tình trạng phòng trong thời gian hợp lý.</li>
+    <li>Mọi tranh chấp sẽ được giải quyết bằng thương lượng; nếu không thành, đưa ra Tòa án có thẩm quyền.</li>
+</ul>
+
+<div class="signature">
+    <table>
+        <tr>
+            <td style="width:50%;">
+                <b>BÊN A</b><br/>(Ký tên)<br/><br/>
+                <span th:text="${owner.fullName}">Owner Name</span>
+            </td>
+            <td style="width:50%;">
+                <b>BÊN B</b><br/>(Ký tên)<br/><br/>
+                <span th:text="${renter.fullName}">Renter Name</span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="footer">
+    <p>Hợp đồng được tạo tự động bởi hệ thống — ngày <span th:text="${#dates.format(contract.startDate, 'dd/MM/yyyy')}">-</span></p>
+</div>
+</div>
+</body>
+</html>

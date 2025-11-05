@@ -4,19 +4,29 @@ import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.PaymentCreateRequest;
 import com.example.room.dto.request.PaymentUpdateRequest;
 import com.example.room.dto.response.PaymentResponse;
+import com.example.room.utils.Enums.PaymentMethod;
+import com.example.room.utils.Enums.PaymentStatus;
+import com.example.room.utils.Enums.PaymentType;
+
+import java.time.LocalDateTime;
 
 public interface PaymentService {
 
-    // Trả về trực tiếp PaymentResponse
     PaymentResponse createPayment(PaymentCreateRequest request);
 
-    // Trả về trực tiếp PaymentResponse
     PaymentResponse updatePaymentStatus(Long id, PaymentUpdateRequest request);
 
-    // Giữ nguyên PageResponse
-    PageResponse<PaymentResponse> getAllPayments(int page, int size);
+    PageResponse<PaymentResponse> getAllPayments(
+            int page,
+            int size,
+            Long bookingId,
+            PaymentType paymentType,
+            PaymentMethod paymentMethod,
+            PaymentStatus paymentStatus,
+            LocalDateTime paymentDate,
+            LocalDateTime createdAt
+    );
 
-    // Trả về trực tiếp PaymentResponse
     PaymentResponse getPaymentById(Long id);
 
     void generateMonthlyPayments();

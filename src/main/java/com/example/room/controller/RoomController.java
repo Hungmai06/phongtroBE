@@ -28,32 +28,32 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-@Operation(summary = "Đăng một phòng trọ mới (chỉ thông tin, không kèm ảnh)")
-@PreAuthorize("hasAuthority('OWNER')")
-public ResponseEntity<BaseResponse<RoomResponse>> createRoom(
-        @Valid @RequestBody RoomCreateRequest request
-) {
-    RoomResponse newRoom = roomService.createRoom(request); 
-    return ResponseEntity.status(HttpStatus.CREATED).body(
-            BaseResponse.<RoomResponse>builder()
-                    .code(HttpStatus.CREATED.value())
-                    .message("Tạo phòng trọ thành công")
-                    .data(newRoom)
-                    .build()
-    );
-}
+    @Operation(summary = "Đăng một phòng trọ mới (chỉ thông tin, không kèm ảnh)")
+    @PreAuthorize("hasAuthority('OWNER')")
+    public ResponseEntity<BaseResponse<RoomResponse>> createRoom(
+            @Valid @RequestBody RoomCreateRequest request
+    ) {
+        RoomResponse newRoom = roomService.createRoom(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                BaseResponse.<RoomResponse>builder()
+                        .code(HttpStatus.CREATED.value())
+                        .message("Tạo phòng trọ thành công")
+                        .data(newRoom)
+                        .build()
+        );
+    }
 
     @GetMapping("")
     @Operation(summary = "Lấy danh sách phòng trọ có phân trang và lọc")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
     public ResponseEntity<PageResponse<RoomResponse>> searchRooms(
-             @RequestParam(required = false) String q,
-             @RequestParam(required = false) BigDecimal minPrice,
-             @RequestParam(required = false) BigDecimal maxPrice,
-             @RequestParam(required = false) Float minArea,
-             @RequestParam(defaultValue = "0") int page,
-             @RequestParam(defaultValue = "10") int size,
-             @RequestParam(defaultValue = "asc") String sort
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Float minArea,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "asc") String sort
     ) {
         PageResponse<RoomResponse> roomPage = roomService.searchRooms(q, minPrice, maxPrice, minArea, page, size, sort);
         return ResponseEntity.ok(roomPage);

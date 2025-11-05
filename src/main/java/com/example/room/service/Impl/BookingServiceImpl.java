@@ -1,8 +1,13 @@
 package com.example.room.service.Impl;
 
+import com.example.room.dto.BaseResponse;
+import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.BookingCreateRequest;
+import com.example.room.dto.request.BookingEmailRequest;
 import com.example.room.dto.request.BookingUpdateRequest;
+import com.example.room.dto.request.PaymentCreateRequest;
 import com.example.room.dto.response.BookingResponse;
+import com.example.room.dto.response.UserResponse;
 import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.InvalidDataException;
 import com.example.room.exception.ResourceNotFoundException;
@@ -15,11 +20,13 @@ import com.example.room.repository.BookingRepository;
 import com.example.room.repository.RoomRepository;
 import com.example.room.repository.UserRepository;
 import com.example.room.service.BookingService;
-import com.example.room.utils.Enums.BookingStatus;
-import com.example.room.utils.Enums.RoleEnum;
-import com.example.room.utils.Enums.RoomStatus;
+import com.example.room.service.EmailService;
+import com.example.room.service.PaymentService;
+import com.example.room.utils.Enums.*;
 
+import jakarta.mail.MessagingException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,12 +60,17 @@ public class BookingServiceImpl implements BookingService {
     @Autowired
     private BookingMapper bookingMapper;
 
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private PaymentService paymentService;
     @Value("${app.booking.expiration-hours}")
     private long expirationHours;
 
     @Override
     @Transactional
-    public BookingResponse createBooking(BookingCreateRequest request) {
+    public BaseResponse<BookingResponse> createBooking(BookingCreateRequest request) throws MessagingException {
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
         User user = userRepository.findById(request.getUserId())
@@ -70,15 +82,21 @@ public class BookingServiceImpl implements BookingService {
         booking.setRoom(room);
         booking.setUser(user);
         booking.setStatus(BookingStatus.PENDING);
+        booking.setTotalPrice(room.getDeposit());
         booking.setExpirationDate(LocalDateTime.now().plusHours(expirationHours));
 
-        room.setStatus(RoomStatus.RESERVED);
         booking = bookingRepository.save(booking);
-        return bookingMapper.toBookingResponse(booking);
+
+        return BaseResponse.<BookingResponse>builder()
+                .code(200)
+                .message("Tạo booking thành công")
+                .data(bookingMapper.toBookingResponse(booking))
+                .build();
     }
 
     @Override
-    public Page<BookingResponse> getAllBookings(Pageable pageable) {
+    public PageResponse<BookingResponse> getAllBookings(Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(page, size);
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         boolean isAdmin = currentUser.getRole().getName().name().equals(RoleEnum.ADMIN.name());
@@ -99,25 +117,73 @@ public class BookingServiceImpl implements BookingService {
         } else {
             throw new ForBiddenException("Your role is not authorized to access this resource.");
         }
-
-        return bookings.map(bookingMapper::toBookingResponse);
+        List<BookingResponse>  list = bookings.stream().map(booking -> bookingMapper.toBookingResponse(booking)).toList();
+        return PageResponse.<BookingResponse>builder()
+                .code(200)
+                .data(list)
+                .message("Lấy danh sách phòng ")
+                .pageNumber(bookings.getNumber())
+                .totalElements(bookings.getTotalElements())
+                .pageSize(bookings.getSize())
+                .totalPages(bookings.getTotalPages())
+                .build();
     }
 
     @Override
-    public BookingResponse getBookingById(Long id) {
+    public BaseResponse<BookingResponse> getBookingById(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
-        return bookingMapper.toBookingResponse(booking);
+        return BaseResponse.<BookingResponse>builder()
+                .code(200)
+                .message("Lấy chi tiết Booking theo id thành công")
+                .data(bookingMapper.toBookingResponse(booking))
+                .build();
     }
 
     @Override
     @Transactional
-    public BookingResponse updateBookingStatus(Long id, BookingUpdateRequest request) {
+    public BaseResponse<BookingResponse> updateBookingStatus(Long id, BookingUpdateRequest request) throws MessagingException {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
-        booking.setStatus(request.getStatus());
-        booking = bookingRepository.save(booking);
+        Room room1 = booking.getRoom();
+        User user = booking.getUser();
+        User owner = room1.getOwner();
+        if(booking.getStatus() == BookingStatus.PENDING && request.getStatus() ==BookingStatus.CONFIRMED){
+            room1.setStatus(RoomStatus.RESERVED);
+            roomRepository.save(room1);
+            booking.setStatus(request.getStatus());
+            booking = bookingRepository.save(booking);
+            PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.builder()
+                    .amount(new BigDecimal(0))
+                    .bookingId(booking.getId())
+                    .paymentType(PaymentType.DEPOSIT)
+                    .description("Thanh toán đặt cọc cho booking ID: " + booking.getId())
+                    .build();
+            paymentService.createPayment(paymentCreateRequest);
+            BookingEmailRequest bookingEmailRequest = BookingEmailRequest.builder()
+                    .bookingId(booking.getId())
+                    .endDate(booking.getEndDate())
+                    .startDate(booking.getStartDate())
+                    .ownerEmail(owner.getEmail())
+                    .status(booking.getStatus())
+                    .roomAddress(room1.getAddress())
+                    .roomName(room1.getName())
+                    .ownerPhone(owner.getPhone())
+                    .ownerName(owner.getFullName())
+                    .totalPrice(booking.getTotalPrice())
+                    .userName(user.getFullName())
+                    .build();
+            emailService.sendBooking(bookingEmailRequest,user.getEmail());
+        }
+
+        if(booking.getStatus() == BookingStatus.CONFIRMED && request.getStatus() ==BookingStatus.COMPLETED){
+            room1.setStatus(RoomStatus.RENTED);
+            roomRepository.save(room1);
+            booking.setStatus(request.getStatus());
+            booking = bookingRepository.save(booking);
+//            TODO gui EMAIL xac nhan thue phong thanh cong
+        }
         if (request.getStatus() == BookingStatus.CANCELLED) {
             Room room = booking.getRoom();
             if (room != null) {
@@ -126,7 +192,11 @@ public class BookingServiceImpl implements BookingService {
             }
         }
         
-        return bookingMapper.toBookingResponse(booking);
+        return BaseResponse.<BookingResponse>builder()
+                .code(200)
+                .message("Cập nhật booking thành công")
+                .data(bookingMapper.toBookingResponse(booking))
+                .build();
     }
 
     @Override

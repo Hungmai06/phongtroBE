@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thông tin hợp đồng</title>
+  <style>
+    /* Basic email-safe styles */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: #222;
+    }
+    .email-wrap {
+      width: 100%;
+      padding: 24px 12px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(15,23,42,0.08);
+    }
+    .header {
+      background: linear-gradient(90deg,#16a085,#2ecc71);
+      color: #fff;
+      padding: 18px 20px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .content {
+      padding: 20px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #333;
+    }
+    .section-title {
+      color: #0f172a;
+      font-weight: 700;
+      margin: 8px 0 10px 0;
+      font-size: 13px;
+    }
+    .info-box {
+      background: #fbfdff;
+      border: 1px solid #eef2f4;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .row { display:flex; gap:12px; padding:8px 0; }
+    .label { width:140px; color:#556; font-weight:600; }
+    .value { flex:1; color:#111; }
+    .cta {
+      text-align:center;
+      margin: 16px 0 6px 0;
+    }
+    .button {
+      display:inline-block;
+      background: linear-gradient(90deg,#16a085,#2ecc71);
+      color:#fff;
+      padding:10px 18px;
+      border-radius:8px;
+      text-decoration:none;
+      font-weight:700;
+    }
+    .muted { color:#6b7280; font-size:13px; }
+    .footer {
+      background:#f8fafb;
+      padding:12px 18px;
+      font-size:12px;
+      color:#6b7280;
+      text-align:center;
+      border-top:1px solid #eef2f4;
+    }
+    @media (max-width:480px){
+      .label{ width:110px; }
+      .header{ font-size:16px }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrap">
+    <div class="container">
+      <div class="header">THÔNG TIN HỢP ĐỒNG</div>
+
+      <div class="content">
+        <p>Xin chào <strong th:text="${recipientName}">Người nhận</strong>,</p>
+
+        <p>Hệ thống đã tạo hợp đồng thuê cho yêu cầu đặt phòng của bạn. Chi tiết hợp đồng như sau:</p>
+
+        <div class="section-title">Thông tin hợp đồng</div>
+        <div class="info-box">
+          <div class="row"><div class="label">Mã hợp đồng</div><div class="value" th:text="${contractId}">#1234</div></div>
+          <div class="row"><div class="label">Ngày bắt đầu</div><div class="value" th:text="${startDate}">01/01/2025</div></div>
+          <div class="row" th:if="${endDate != null}"><div class="label">Ngày kết thúc</div><div class="value" th:text="${endDate}">31/12/2025</div></div>
+        </div>
+
+        <div class="section-title">Thông tin phòng</div>
+        <div class="info-box">
+          <div class="row"><div class="label">Tên phòng</div><div class="value" th:text="${roomName}">Phòng đơn</div></div>
+          <div class="row"><div class="label">Địa chỉ</div><div class="value" th:text="${roomAddress}">123 Đường ABC</div></div>
+          <div class="row"><div class="label">Giá thuê</div><div class="value" th:text="${#numbers.formatDecimal(price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">3.000.000 VNĐ</div></div>
+        </div>
+
+        <div class="section-title">Thông tin chủ / người thuê</div>
+        <div class="info-box">
+          <div class="row"><div class="label">Chủ phòng</div><div class="value"><span th:text="${ownerName}">Nguyễn Văn A</span> <span class="muted">(<span th:text="${ownerEmail}">owner@example.com</span>)</span></div></div>
+          <div class="row"><div class="label">SĐT chủ</div><div class="value" th:text="${ownerPhone}">0123456789</div></div>
+          <div style="height:8px"></div>
+          <div class="row"><div class="label">Người thuê</div><div class="value"><span th:text="${renterName}">Trần Thị B</span> <span class="muted">(<span th:text="${renterEmail}">renter@example.com</span>)</span></div></div>
+          <div class="row"><div class="label">SĐT thuê</div><div class="value" th:text="${renterPhone}">0987654321</div></div>
+        </div>
+
+        <div class="section-title">Tài liệu hợp đồng</div>
+        <div class="info-box">
+          <p class="muted">Bạn có thể tải hoặc xem hợp đồng tại liên kết dưới đây:</p>
+          <div class="cta">
+            <a th:href="${contractUrl}" class="button">Tải / Xem hợp đồng</a>
+          </div>
+          <p class="muted" style="margin-top:10px;">Nếu liên kết không hoạt động, bạn có thể đăng nhập vào hệ thống và vào phần "Hợp đồng" để tải về.</p>
+        </div>
+
+        <div class="section-title">Lưu ý</div>
+        <div class="info-box">
+          <p>Chủ trọ và người thuê vui lòng kiểm tra nội dung hợp đồng. Nếu cần chỉnh sửa, trao đổi trực tiếp với chủ trọ trước khi ký.</p>
+          <p class="muted">Hệ thống sẽ gửi email xác nhận khi hợp đồng được ký và lưu trữ.</p>
+        </div>
+
+      </div>
+
+      <div class="footer">
+        © <span th:text="${year}">2025</span> Hệ thống Quản lý Nhà trọ · Email tự động, vui lòng không trả lời.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

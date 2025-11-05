@@ -131,6 +131,20 @@
 			<version>5.11.0</version>
 			<scope>test</scope>
 		</dependency>
+
+        <!-- Thư viện chuyển HTML -> PDF -->
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>1.0.10</version>
+        </dependency>
+
+        <!-- Font hỗ trợ tiếng Việt -->
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-slf4j</artifactId>
+            <version>1.0.10</version>
+        </dependency>
 	</dependencies>
 	<build>
 		<plugins>

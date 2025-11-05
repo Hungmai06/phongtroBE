@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            margin: 2cm;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 12px;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            line-height: 1.5;
+            font-size: 12pt;
+            color: #222;
+        }
+        header {
+            text-align: center;
+            margin: 8px 0 18px 0;
+        }
+        h1 {
+            margin: 0;
+            font-size: 18pt;
+            color: #2E86C1;
+            letter-spacing: 0.6px;
+        }
+        h3 {
+            margin: 18px 0 8px 0;
+            font-size: 12pt;
+            color: #111;
+        }
+        p {
+            margin: 6px 0;
+        }
+        .meta p { margin: 4px 0; }
+        table.info {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 11pt;
+        }
+        table.info th, table.info td {
+            border: 1px solid #e6e6e6;
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.info th {
+            background: #fafafa;
+            width: 35%;
+            font-weight: 600;
+        }
+        .total-row {
+            background: #f0f8ff;
+            font-weight: 700;
+        }
+        .footer {
+            margin-top: 18px;
+            font-size: 10pt;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+<header>
+    <h1>HÓA ĐƠN THANH TOÁN</h1>
+</header>
+
+<div class="meta">
+    <p>Số hóa đơn: <b th:text="${invoiceNumber}">INV-20250101-1234</b></p>
+    <p>Ngày phát hành: <b th:text="${issueDate}">01/01/2025</b></p>
+</div>
+
+<h3>1. Thông tin khách hàng</h3>
+<p>Họ tên: <b th:text="${customerName}">Nguyễn Văn A</b></p>
+<p>Email: <span th:text="${customerEmail}">customer@example.com</span></p>
+<p>Điện thoại: <span th:text="${customerPhone}">0123456789</span></p>
+
+<h3>2. Thông tin phòng</h3>
+<p>Tên phòng: <b th:text="${roomName}">Phòng 101</b></p>
+<p>Địa chỉ: <span th:text="${roomAddress}">123 Đường ABC</span></p>
+
+<h3>3. Chi tiết thanh toán</h3>
+<table class="info">
+    <tr>
+        <th>Loại thanh toán</th>
+        <td th:text="${paymentType}">Tiền cọc</td>
+    </tr>
+    <tr>
+        <th>Mô tả</th>
+        <td th:text="${description}">Thanh toán tiền cọc phòng</td>
+    </tr>
+    <tr>
+        <th>Số tiền</th>
+        <td th:text="${#numbers.formatInteger(amount)} + ' VNĐ'">3.000.000 VNĐ</td>
+    </tr>
+    <tr>
+        <th>Ngày thanh toán</th>
+        <td th:text="${paymentDate}">01/01/2025</td>
+    </tr>
+    <tr class="total-row">
+        <th>Tổng cộng</th>
+        <td th:text="${#numbers.formatInteger(totalAmount)} + ' VNĐ'">3.000.000 VNĐ</td>
+    </tr>
+</table>
+
+<div class="footer">
+    <p>Hóa đơn được tạo tự động bởi hệ thống — ngày <span th:text="${issueDate}">01/01/2025</span></p>
+    <p>Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+</div>
+</div>
+</body>
+</html>
+

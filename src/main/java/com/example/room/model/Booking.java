@@ -38,16 +38,13 @@ import java.util.List;
 @Table(name = "bookings")
 public class Booking extends BaseEntity{
     @Column(name = "start_date",nullable = false)
-    private LocalDate startDate;
+    private LocalDateTime startDate;
 
     @Column(name = "end_date")
-    private LocalDate endDate;
+    private LocalDateTime endDate;
 
     @Column(name = "total_price")
     private BigDecimal totalPrice;
-
-    @Column(name = "deleted", nullable = false)
-    private boolean deleted = Boolean.FALSE;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)

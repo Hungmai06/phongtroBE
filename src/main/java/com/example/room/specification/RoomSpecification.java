@@ -28,7 +28,7 @@ public class RoomSpecification {
             if (maxPrice != null) {
                 predicate = criteriaBuilder.and(predicate, criteriaBuilder.lessThanOrEqualTo(root.get("price"), maxPrice));
             }
-            
+
             // Lọc theo diện tích tối thiểu
             if (minArea != null) {
                 predicate = criteriaBuilder.and(predicate, criteriaBuilder.greaterThanOrEqualTo(root.get("area"), minArea));

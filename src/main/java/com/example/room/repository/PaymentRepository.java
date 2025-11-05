@@ -4,12 +4,13 @@ import com.example.room.model.Payment;
 import com.example.room.utils.Enums.PaymentType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 @Repository
-public interface PaymentRepository extends JpaRepository<Payment, Long> {
+public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpecificationExecutor<Payment> {
     boolean existsByBooking_IdAndPaymentTypeAndPaymentDateBetween(
             Long bookingId,
             com.example.room.utils.Enums.PaymentType paymentType,

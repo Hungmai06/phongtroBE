@@ -141,6 +141,10 @@ public class UserServiceImpl implements UserService {
         return PageResponse.<UserResponse>builder()
                 .code(200)
                 .data(users)
+                .totalPages(userPage.getTotalPages())
+                .totalElements(userPage.getTotalElements())
+                .pageSize(userPage.getSize())
+                .pageNumber(userPage.getNumber())
                 .message("Lấy danh sách người dùng")
                 .build();
     }

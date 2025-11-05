@@ -1,0 +1,16 @@
+package com.example.room.repository;
+
+import com.example.room.model.RoomServiceUsage;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+public interface RoomServiceUsageRepository extends JpaRepository<RoomServiceUsage,Long> {
+    Page<RoomServiceUsage> findByMonth(LocalDateTime month, Pageable pageable);
+
+    // Find all usages for a given room within a month interval (inclusive)
+    List<RoomServiceUsage> findByRoom_IdAndMonthBetween(Long roomId, LocalDateTime start, LocalDateTime end);
+}

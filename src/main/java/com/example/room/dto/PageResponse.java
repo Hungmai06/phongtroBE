@@ -18,5 +18,8 @@ public class PageResponse<T> {
     private Integer code;
     private String message;
     private List<T> data;
-
+    private int pageNumber;
+    private int pageSize;
+    private long totalElements;
+    private int totalPages;
 }

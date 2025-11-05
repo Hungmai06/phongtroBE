@@ -1,17 +1,6 @@
 package com.example.room.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,11 +10,6 @@ import org.hibernate.annotations.Where;
 import com.example.room.utils.Enums.RoomStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.OneToMany;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +31,10 @@ public class Room extends BaseEntity{
     @JsonManagedReference
     private List<Image> images = new ArrayList<>();
 
+    // services available for this room
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomService> services = new ArrayList<>();
+
     @Column(name = "description",nullable = false)
     private String description;
 
@@ -64,9 +52,6 @@ public class Room extends BaseEntity{
 
     @Column(name = "address",nullable = false)
     private String address;
-
-    @Column(name = "utilities")
-    private String utilities;// tiện ích
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

@@ -24,32 +24,17 @@ public class InvoiceController {
 
     @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
     @GetMapping
-    public ResponseEntity<PageResponse<InvoiceResponse>> getInvoices(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+    public PageResponse<InvoiceResponse> getInvoices(
+            @RequestParam int page,
+            @RequestParam int size
     ) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<InvoiceResponse> invoicePage = invoiceService.getInvoices(pageable);
-
-        PageResponse<InvoiceResponse> response = PageResponse.<InvoiceResponse>builder()
-                .code(HttpStatus.OK.value())
-                .message("Lấy danh sách hóa đơn thành công")
-                .data(invoicePage.getContent())
-                .build();
-
-        return ResponseEntity.ok(response);
+      return invoiceService.getInvoices(page, size);
     }
 
     @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessInvoice(#id)")
     @GetMapping("/{id}")
-    public ResponseEntity<BaseResponse<InvoiceResponse>> getInvoiceById(@PathVariable Long id) {
-        InvoiceResponse invoice = invoiceService.getInvoiceById(id);
-        BaseResponse<InvoiceResponse> response = BaseResponse.<InvoiceResponse>builder()
-                .code(HttpStatus.OK.value())
-                .message("Lấy thông tin hóa đơn thành công")
-                .data(invoice)
-                .build();
-        return ResponseEntity.ok(response);
+    public BaseResponse<InvoiceResponse> getInvoiceById(@PathVariable Long id) {
+      return invoiceService.getInvoiceById(id);
     }
 
     @PreAuthorize("hasAnyAuthority('OWNER', 'RENTER') and @securityService.canAccessInvoice(#id)")
@@ -64,23 +49,21 @@ public class InvoiceController {
 
     @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN') and @securityService.canAccessInvoice(#id)")
     @PostMapping("/send/{id}")
-    public ResponseEntity<BaseResponse<Object>> sendInvoice(@PathVariable Long id) {
+    public BaseResponse<?> sendInvoice(@PathVariable Long id) {
         invoiceService.sendInvoiceByEmail(id);
-        BaseResponse<Object> response = BaseResponse.builder()
-                .code(HttpStatus.OK.value())
+        return BaseResponse.builder()
+                .code(200)
                 .message("Đã gửi lại hóa đơn thành công")
                 .build();
-        return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("hasAuthority('ADMIN') and @securityService.canAccessInvoice(#id)")
     @DeleteMapping("/{id}")
-    public ResponseEntity<BaseResponse<Object>> cancelInvoice(@PathVariable Long id) {
+    public BaseResponse<Object> cancelInvoice(@PathVariable Long id) {
         invoiceService.cancelInvoice(id);
-        BaseResponse<Object> response = BaseResponse.builder()
-                .code(HttpStatus.OK.value())
+        return BaseResponse.builder()
+                .code(200)
                 .message("Hủy hóa đơn thành công")
                 .build();
-        return ResponseEntity.ok(response);
     }
 }

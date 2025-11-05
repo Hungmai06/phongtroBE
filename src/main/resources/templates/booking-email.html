@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Xác nhận đặt phòng</title>
+    <style>
+        body {
+          font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+          background-color: #f3f6fb;
+          margin: 0;
+          padding: 30px 10px;
+          color: #333;
+        }
+        .container {
+          max-width: 600px;
+          margin: auto;
+          background: #ffffff;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+          background: linear-gradient(135deg, #16a085, #2ecc71);
+          color: #fff;
+          padding: 20px 24px;
+          font-size: 22px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-align: center;
+        }
+        .content {
+          padding: 24px;
+          line-height: 1.6;
+          color: #374151;
+        }
+        .section {
+          margin-bottom: 18px;
+          padding: 16px;
+          background: #f9fafb;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+        }
+        .label { font-weight: 700; color: #374151; width: 140px; }
+        .value { color: #111827; }
+        .row { display: flex; gap: 12px; padding: 8px 0; align-items: center; }
+        .notice {
+          background: #fff3e0;
+          border-left: 4px solid #ff9800;
+          padding: 14px;
+          border-radius: 6px;
+          color: #333;
+        }
+        .footer {
+          background: #f9fafb;
+          padding: 16px;
+          font-size: 13px;
+          color: #6b7280;
+          text-align: center;
+          border-top: 1px solid #e5e7eb;
+        }
+        a.action {
+          display: inline-block;
+          background: linear-gradient(90deg, #16a085, #2ecc71);
+          color: white;
+          padding: 10px 14px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">XÁC NHẬN ĐẶT PHÒNG</div>
+
+    <div class="content">
+        <div style="margin-bottom:12px; color:#374151;">Xin chào <strong th:text="${userName}">Khách hàng</strong>,</div>
+
+        <!-- Room information -->
+        <div class="section">
+            <div style="font-weight:800; color:#16a085; margin-bottom:8px;">Thông tin phòng</div>
+
+            <div class="row"><div class="label">Mã đặt phòng:</div><div class="value" th:text="${bookingId}">#12345</div></div>
+            <div class="row"><div class="label">Tên phòng:</div><div class="value" th:text="${roomName}">Phòng đơn</div></div>
+            <div class="row"><div class="label">Địa chỉ:</div><div class="value" th:text="${roomAddress}">123 ABC</div></div>
+            <div class="row"><div class="label">Tiền đặt cọc:</div><div class="value" th:text="${#numbers.formatDecimal(totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">1.000.000 VNĐ</div></div>
+            <div class="row"><div class="label">Ngày bắt đầu:</div><div class="value" th:text="${#temporals.format(startDate, 'dd/MM/yyyy')}">01/01/2025</div></div>
+            <div class="row" th:if="${endDate != null}"><div class="label">Ngày kết thúc:</div><div class="value" th:text="${#temporals.format(endDate, 'dd/MM/yyyy')}">31/12/2025</div></div>
+        </div>
+
+        <!-- Owner information -->
+        <div class="section" th:if="${ownerName != null}">
+            <div style="font-weight:800; color:#16a085; margin-bottom:8px;">Thông tin chủ nhà</div>
+            <div class="row"><div class="label">Tên chủ nhà:</div><div class="value" th:text="${ownerName}">Nguyễn Văn A</div></div>
+            <div class="row" th:if="${ownerPhone != null}"><div class="label">SĐT:</div><div class="value" th:text="${ownerPhone}">0123456789</div></div>
+            <div class="row" th:if="${ownerEmail != null}"><div class="label">Email:</div><div class="value" th:text="${ownerEmail}">owner@example.com</div></div>
+        </div>
+
+        <!-- Notice that owner will send payment link/info -->
+        <div class="notice">
+            <strong>Chú ý:</strong>
+            <p style="margin:6px 0 0;">Chủ trọ sẽ gửi thông tin thanh toán (link hoặc hướng dẫn) để thanh toán tiền đặt cọc sau khi xác nhận đặt phòng. Vui lòng kiểm tra email thường xuyên hoặc liên hệ trực tiếp với chủ trọ nếu cần.</p>
+        </div>
+
+        <div style="height:18px"></div>
+    </div>
+
+    <div class="footer">
+        © <span th:text="${year}">2025</span> Hệ thống Quản lý Nhà trọ · Email tự động – vui lòng không trả lời.
+    </div>
+</div>
+</body>
+</html>

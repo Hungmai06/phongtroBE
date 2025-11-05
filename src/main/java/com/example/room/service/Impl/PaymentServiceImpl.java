@@ -1,6 +1,5 @@
 package com.example.room.service.Impl;
 
-import com.example.room.dto.BaseResponse;
 import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.PaymentCreateRequest;
 import com.example.room.dto.request.PaymentUpdateRequest;
@@ -17,8 +16,10 @@ import com.example.room.repository.PaymentRepository;
 import com.example.room.service.ContractService;
 import com.example.room.service.InvoiceService;
 import com.example.room.service.PaymentService;
+import com.example.room.specification.PaymentSpecification;
 import com.example.room.utils.Enums.BookingStatus;
 import com.example.room.utils.Enums.ContractStatus;
+import com.example.room.utils.Enums.PaymentMethod;
 import com.example.room.utils.Enums.PaymentStatus;
 import com.example.room.utils.Enums.PaymentType;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,7 +38,6 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,25 +64,17 @@ public class PaymentServiceImpl implements PaymentService {
         }
         Payment payment = paymentMapper.toEntity(request);
         payment.setBooking(booking);
-
+        payment.setPaymentStatus(PaymentStatus.PENDING);
         switch (request.getPaymentType()) {
             case DEPOSIT:
                 payment.setAmount(booking.getRoom().getDeposit());
                 break;
             case OTHER:
-        
+                payment.setAmount(request.getAmount());
                 break;
         }
 
-        // Automatically set the payment date if the status is PAID upon creation
-        if (payment.getPaymentStatus() == PaymentStatus.PAID) {
-        payment.setPaymentDate(LocalDateTime.now());
-        }
         Payment savedPayment = paymentRepository.save(payment);
-
-        if (savedPayment.getPaymentStatus() == PaymentStatus.PAID) {
-            handlePaidPayment(savedPayment);
-        }
 
         return paymentMapper.toResponse(savedPayment);
     }
@@ -112,26 +105,25 @@ public class PaymentServiceImpl implements PaymentService {
 
         boolean contractExists = booking.getContracts() != null && !booking.getContracts().isEmpty();
         if (!contractExists && payment.getPaymentType() == PaymentType.DEPOSIT) {
-            contractService.createContractFromBooking(booking);
-            log.info("✅ Đã tạo hợp đồng cho booking ID {}", booking.getId());
+            contractService.createContractFromBooking(booking.getId());
         }
 
         try {
-            invoiceService.createInvoiceRecord(payment);
-            log.info("🧾 Đã tạo hóa đơn cho payment ID {}", payment.getId());
+            invoiceService.createInvoiceRecord(payment.getId());
         } catch (Exception e) {
-            log.error("❌ Lỗi khi tạo hóa đơn cho payment ID {}: {}", payment.getId(), e.getMessage());
+            log.error(" Lỗi khi tạo hóa đơn cho payment ID {}: {}", payment.getId(), e.getMessage());
         }
 
-        log.info("📧 Đã gửi email xác nhận thanh toán cho renter.");
     }
 
-     @Override
-    public PageResponse<PaymentResponse> getAllPayments(int page, int size) {
+    @Override
+    public PageResponse<PaymentResponse> getAllPayments(int page, int size, Long bookingId, PaymentType paymentType, PaymentMethod paymentMethod, PaymentStatus paymentStatus, LocalDateTime paymentDate, LocalDateTime createdAt) {
         Pageable pageable = PageRequest.of(page, size);
+
+        Specification<Payment> spec = PaymentSpecification.filter(bookingId, paymentType, paymentMethod, paymentStatus, paymentDate, createdAt);
+
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        // Kiểm tra vai trò của người dùng hiện tại
         boolean isAdmin = currentUser.getRole().getName().name().equals(RoleEnum.ADMIN.name());
         boolean isOwner = currentUser.getRole().getName().name().equals(RoleEnum.OWNER.name());
         boolean isRenter = currentUser.getRole().getName().name().equals(RoleEnum.RENTER.name());
@@ -139,30 +131,36 @@ public class PaymentServiceImpl implements PaymentService {
         Page<Payment> paymentPage;
 
         if (isAdmin) {
-            // ADMIN: Lấy tất cả các thanh toán
-            paymentPage = paymentRepository.findAll(pageable);
+            if (spec == null) {
+                paymentPage = paymentRepository.findAll(pageable);
+            } else {
+                paymentPage = paymentRepository.findAll(spec, pageable);
+            }
         } else if (isOwner) {
-            // OWNER: Lấy các thanh toán liên quan đến phòng của họ
-            paymentPage = paymentRepository.findByBooking_Room_Owner_Id(currentUser.getId(), pageable);
+            Specification<Payment> ownerSpec = (root, query, cb) -> cb.equal(root.get("booking").get("room").get("owner").get("id"), currentUser.getId());
+            Specification<Payment> combined = (spec == null) ? ownerSpec : spec.and(ownerSpec);
+            paymentPage = paymentRepository.findAll(combined, pageable);
         } else if (isRenter) {
-            // RENTER: Lấy các thanh toán của chính họ
-            paymentPage = paymentRepository.findByBooking_User_Id(currentUser.getId(), pageable);
+            Specification<Payment> renterSpec = (root, query, cb) -> cb.equal(root.get("booking").get("user").get("id"), currentUser.getId());
+            Specification<Payment> combined = (spec == null) ? renterSpec : spec.and(renterSpec);
+            paymentPage = paymentRepository.findAll(combined, pageable);
         } else {
-            // Vai trò không được phép
             throw new AccessDeniedException("Your role is not authorized to access payment records.");
         }
 
-        List<PaymentResponse> responses = paymentPage.getContent()
-                .stream()
-                .map(paymentMapper::toResponse)
-                .collect(Collectors.toList());
+        List<PaymentResponse> responses = paymentPage.getContent().stream().map(paymentMapper::toResponse).collect(Collectors.toList());
 
         return PageResponse.<PaymentResponse>builder()
                 .code(200)
+                .pageSize(paymentPage.getSize())
+                .pageNumber(paymentPage.getNumber())
+                .totalElements(paymentPage.getTotalElements())
+                .totalPages(paymentPage.getTotalPages())
                 .message("Lấy danh sách thanh toán thành công")
                 .data(responses)
                 .build();
     }
+
 
     @Override
     public PaymentResponse getPaymentById(Long id) {
@@ -176,22 +174,17 @@ public class PaymentServiceImpl implements PaymentService {
     public void generateMonthlyPayments() {
         LocalDate today = LocalDate.now();
         List<Contract> activeContracts = contractRepository.findByStatus(ContractStatus.ACTIVE);
-        log.info("Bắt đầu quét và tạo thanh toán hàng tháng cho {} hợp đồng đang hoạt động...", activeContracts.size());
 
         for (Contract contract : activeContracts) {
             LocalDate start = contract.getStartDate().toLocalDate();
-            // Xử lý trường hợp không có ngày kết thúc
             LocalDate end = (contract.getEndDate() != null) ? contract.getEndDate().toLocalDate() : today.plusYears(1);
 
             if (today.isBefore(start) || today.isAfter(end)) {
-                continue; // Bỏ qua hợp đồng chưa bắt đầu hoặc đã kết thúc
+                continue;
             }
 
-            LocalDateTime monthStart = today.withDayOfMonth(1).atStartOfDay();
-            LocalDateTime monthEnd = today.with(TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59);
             Booking booking = contract.getBooking();
 
-            // Sửa logic kiểm tra: Dựa trên mô tả để tránh lỗi paymentDate
             boolean exists = paymentRepository.existsByBooking_IdAndPaymentTypeAndDescription(
                 booking.getId(),
                 PaymentType.MONTHLY,
@@ -200,7 +193,6 @@ public class PaymentServiceImpl implements PaymentService {
 
             if (!exists) {
 
-                // 1. Tạo thanh toán PENDING (KHÔNG có paymentDate)
                 Payment monthlyPayment = Payment.builder()
                         .booking(booking)
                         .paymentType(PaymentType.MONTHLY)
@@ -210,14 +202,11 @@ public class PaymentServiceImpl implements PaymentService {
                         .build();
 
                 Payment savedPayment = paymentRepository.save(monthlyPayment);
-                log.info("✅ Đã tạo payment MONTHLY cho hợp đồng ID {}", contract.getId());
 
-                // 2. TỰ ĐỘNG TẠO HÓA ĐƠN NGAY LẬP TỨC
                 try {
-                    invoiceService.createInvoiceRecord(savedPayment);
-                    log.info("🧾 Đã tự động tạo hóa đơn cho payment ID {}", savedPayment.getId());
+                    invoiceService.createInvoiceRecord(savedPayment.getId());
                 } catch (Exception e) {
-                    log.error("❌ Lỗi khi tự động tạo hóa đơn cho payment ID {}: {}", savedPayment.getId(), e.getMessage());
+                    log.error("Lỗi khi tự động tạo hóa đơn cho payment ID {}: {}", savedPayment.getId(), e.getMessage());
                 }
             }
         }

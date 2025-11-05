@@ -62,7 +62,6 @@ public class RoomServiceImpl implements RoomService {
                 .area(request.getArea())
                 .capacity(request.getCapacity())
                 .address(request.getAddress())
-                .utilities(request.getUtilities())
                 .status(RoomStatus.AVAILABLE)
                 .owner(currentUser)
                 .build();
@@ -93,7 +92,6 @@ public class RoomServiceImpl implements RoomService {
         if (request.getArea() != null) room.setArea(request.getArea());
         if (request.getCapacity() != null) room.setCapacity(request.getCapacity());
         if (request.getAddress() != null) room.setAddress(request.getAddress());
-        if (request.getUtilities() != null) room.setUtilities(request.getUtilities());
         if (request.getStatus() != null) room.setStatus(request.getStatus());
 
         // Cập nhật danh sách ảnh: Xóa tất cả ảnh cũ và thêm danh sách ảnh mới
@@ -157,6 +155,10 @@ public class RoomServiceImpl implements RoomService {
 
         return PageResponse.<RoomResponse>builder()
                 .code(200)
+                .totalPages(roomPage.getTotalPages())
+                .totalElements(roomPage.getTotalElements())
+                .pageNumber(roomPage.getNumber())
+                .pageSize(roomPage.getSize())
                 .message("Lấy danh sách phòng thành công")
                 .data(roomResponses)
                 .build();

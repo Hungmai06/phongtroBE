@@ -5,6 +5,7 @@ import com.example.room.utils.Enums.PaymentStatus;
 import com.example.room.utils.Enums.PaymentType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
+@Builder
 public class PaymentCreateRequest {
 
     @NotNull(message = "Booking ID không được để trống")
@@ -28,6 +30,4 @@ public class PaymentCreateRequest {
 
     private PaymentMethod paymentMethod;
 
-    @NotNull(message = "Trạng thái thanh toán không được để trống")
-    private PaymentStatus paymentStatus;
 }
