@@ -7,8 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Where;
 
-import java.util.List;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -45,6 +45,9 @@ public class Payment extends BaseEntity {
 
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;
+
+    @Column(name = "payment_period")
+    private LocalDate paymentPeriod;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")
@@ -52,5 +55,9 @@ public class Payment extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "contract_id")
-    private Contract contract; 
+    private Contract contract;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", nullable = false)
+    private Room room;
 }

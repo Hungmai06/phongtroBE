@@ -12,19 +12,19 @@ import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.InvalidDataException;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.BookingMapper;
-import com.example.room.model.Booking;
-import com.example.room.model.Invoice;
-import com.example.room.model.Room;
-import com.example.room.model.User;
+import com.example.room.model.*;
+import com.example.room.repository.BankAccountRepository;
 import com.example.room.repository.BookingRepository;
 import com.example.room.repository.RoomRepository;
 import com.example.room.repository.UserRepository;
 import com.example.room.service.BookingService;
 import com.example.room.service.EmailService;
 import com.example.room.service.PaymentService;
+import com.example.room.utils.BankAccountUtils;
 import com.example.room.utils.Enums.*;
 
 import jakarta.mail.MessagingException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,30 +41,24 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
-    @Autowired
-    private BookingRepository bookingRepository;
+    private final BookingRepository bookingRepository;
+    private final RoomRepository roomRepository;
+    private final UserRepository userRepository;
+    private final BookingMapper bookingMapper;
+    private final EmailService emailService;
+    private final PaymentService paymentService;
+    private final BankAccountUtils bankAccountUtils;
+    private final BankAccountRepository bankAccountRepository;
 
-    @Autowired
-    private RoomRepository roomRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BookingMapper bookingMapper;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private PaymentService paymentService;
     @Value("${app.booking.expiration-hours}")
     private long expirationHours;
 
@@ -106,13 +100,10 @@ public class BookingServiceImpl implements BookingService {
         Page<Booking> bookings;
 
         if (isAdmin) {
-            // ADMIN: Lấy tất cả các booking
             bookings = bookingRepository.findAll(pageable);
         } else if (isOwner) {
-            // OWNER: Lấy các booking liên quan đến phòng của họ
             bookings = bookingRepository.findByRoom_Owner_Id(currentUser.getId(), pageable);
         } else if (isRenter) {
-            // RENTER: Lấy các booking của chính họ
             bookings = bookingRepository.findByUser_Id(currentUser.getId(), pageable);
         } else {
             throw new ForBiddenException("Your role is not authorized to access this resource.");
@@ -153,14 +144,18 @@ public class BookingServiceImpl implements BookingService {
             room1.setStatus(RoomStatus.RESERVED);
             roomRepository.save(room1);
             booking.setStatus(request.getStatus());
-            booking = bookingRepository.save(booking);
+            booking = bookingRepository.saveAndFlush(booking);
+            String description = "Thanh toán cọc cho đặt phòng "+ booking.getRoom().getName()+" " + UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
             PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.builder()
                     .amount(new BigDecimal(0))
+                    .description(description)
                     .bookingId(booking.getId())
                     .paymentType(PaymentType.DEPOSIT)
-                    .description("Thanh toán đặt cọc cho booking ID: " + booking.getId())
                     .build();
             paymentService.createPayment(paymentCreateRequest);
+            BankAccount bankAccount = bankAccountRepository.findByUser_Id(owner.getId()).orElseThrow(
+                    ()-> new ResourceNotFoundException("Chủ phòng chưa có tài khoản ngân hàng")
+            );
             BookingEmailRequest bookingEmailRequest = BookingEmailRequest.builder()
                     .bookingId(booking.getId())
                     .endDate(booking.getEndDate())
@@ -173,16 +168,33 @@ public class BookingServiceImpl implements BookingService {
                     .ownerName(owner.getFullName())
                     .totalPrice(booking.getTotalPrice())
                     .userName(user.getFullName())
+                    .note("Thanh toán trong vòng 24h để xác nhận đặt phòng")
+                    .linkQR(bankAccountUtils.generateVietQR(bankAccount.getBankCode(), bankAccount.getAccountNumber(),
+                            bankAccount.getAccountName(),booking.getTotalPrice(), description))
                     .build();
             emailService.sendBooking(bookingEmailRequest,user.getEmail());
         }
 
-        if(booking.getStatus() == BookingStatus.CONFIRMED && request.getStatus() ==BookingStatus.COMPLETED){
+        if(booking.getStatus() == BookingStatus.CONFIRMED && request.getStatus() == BookingStatus.COMPLETED){
             room1.setStatus(RoomStatus.RENTED);
             roomRepository.save(room1);
             booking.setStatus(request.getStatus());
             booking = bookingRepository.save(booking);
-//            TODO gui EMAIL xac nhan thue phong thanh cong
+            BookingEmailRequest bookingEmailRequest = BookingEmailRequest.builder()
+                    .bookingId(booking.getId())
+                    .endDate(booking.getEndDate())
+                    .startDate(booking.getStartDate())
+                    .ownerEmail(owner.getEmail())
+                    .status(booking.getStatus())
+                    .roomAddress(room1.getAddress())
+                    .roomName(room1.getName())
+                    .ownerPhone(owner.getPhone())
+                    .ownerName(owner.getFullName())
+                    .totalPrice(booking.getTotalPrice())
+                    .userName(user.getFullName())
+                    .note("Thanh toán đặt phòng thành công")
+                    .build();
+            emailService.sendBooking(bookingEmailRequest,user.getEmail());
         }
         if (request.getStatus() == BookingStatus.CANCELLED) {
             Room room = booking.getRoom();
@@ -211,23 +223,18 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public void cancelExpiredBookings() {
-        // Tìm tất cả booking đang PENDING và đã qua ngày hết hạn
         List<Booking> expiredBookings = bookingRepository.findByStatusAndExpirationDateBefore(
                 BookingStatus.PENDING, 
                 LocalDateTime.now()
         );
-
         if (expiredBookings.isEmpty()) {
-            return; // Không có gì để xử lý
+            return;
         }
         
         log.info("Tìm thấy {} booking quá hạn cần xử lý.", expiredBookings.size());
 
         for (Booking booking : expiredBookings) {
-            // Chuyển trạng thái booking thành CANCELLED
             booking.setStatus(BookingStatus.CANCELLED);
-            
-            // Lấy phòng liên quan và chuyển trạng thái về AVAILABLE
             Room room = booking.getRoom();
             if (room != null && room.getStatus() == RoomStatus.RESERVED) {
                 room.setStatus(RoomStatus.AVAILABLE);
@@ -235,8 +242,6 @@ public class BookingServiceImpl implements BookingService {
                 log.info("Đã giải phóng phòng ID {} từ booking ID {}.", room.getId(), booking.getId());
             }
         }
-        
-        // Lưu lại thay đổi trạng thái của các booking
         bookingRepository.saveAll(expiredBookings);
     }
 

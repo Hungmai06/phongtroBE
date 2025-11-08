@@ -24,7 +24,7 @@ public class BankAccount extends BaseEntity{
     @Column(name = "account_name")
     private String accountName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
     private User user;
 }

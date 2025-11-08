@@ -27,11 +27,10 @@ public class Room extends BaseEntity{
     @Column(name = "name",nullable = false)
     private String name;
     
-   @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Image> images = new ArrayList<>();
 
-    // services available for this room
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomService> services = new ArrayList<>();
 
@@ -64,4 +63,6 @@ public class Room extends BaseEntity{
     @OneToMany(mappedBy = "room")
     private List<Booking> bookings;
 
+    @OneToMany(mappedBy = "room")
+    private List<Payment> payments;
 }

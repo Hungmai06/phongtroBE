@@ -10,14 +10,20 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @Builder
 public class PaymentCreateRequest {
 
-    @NotNull(message = "Booking ID không được để trống")
+    private Long roomId;
+
     private Long bookingId;
+
+    private LocalDate paymentPeriod;
+
+    private String description;
 
     @NotNull(message = "Loại thanh toán không được để trống")
     private PaymentType paymentType;
@@ -25,8 +31,6 @@ public class PaymentCreateRequest {
     @NotNull(message = "Số tiền không được để trống")
     @DecimalMin(value = "0.0", message = "Số tiền phải lớn hơn hoặc bằng 0")
     private BigDecimal amount;
-
-    private String description;
 
     private PaymentMethod paymentMethod;
 

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Thanh toán hàng tháng</title>
+    <style>
+        body { margin:0; padding:20px; background:#f3f6fb; font-family: 'Segoe UI', Roboto, Arial, sans-serif; color:#333; }
+        .container { max-width:680px; margin:20px auto; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 8px 30px rgba(2,6,23,0.08); }
+        .header { background: linear-gradient(135deg,#16a085,#2ecc71); color:#fff; padding:18px 24px; font-size:20px; font-weight:700; }
+        .inner { padding:22px 24px; }
+        h1 { margin:0 0 8px 0; font-size:18px; color:#064e3b; }
+        p { margin:10px 0; color:#374151; line-height:1.5; }
+        .info { background:#f9fafb; border:1px solid #eef6f0; border-radius:8px; padding:12px; margin:14px 0; }
+        .row { display:flex; gap:12px; flex-wrap:wrap; }
+        .col { flex:1 1 220px; min-width:180px; }
+        .label { font-size:13px; color:#6b7280; margin-bottom:6px; }
+        .value { font-size:15px; color:#0f1724; font-weight:700; }
+        table { width:100%; border-collapse:collapse; margin-top:12px; }
+        th, td { padding:10px 8px; text-align:left; border-bottom:1px solid #eef6f0; }
+        th { color:#155e4b; font-weight:700; font-size:13px; }
+        .amount { text-align:right; color:#0f1724; font-weight:700; }
+        .qr { text-align:center; margin:12px 0; }
+        .qr img { max-width:220px; width:100%; height:auto; border-radius:8px; }
+        .cta { text-align:center; margin-top:18px; }
+        .button { display:inline-block; text-decoration:none; background:#16a085; color:#fff; padding:12px 20px; border-radius:8px; font-weight:600; }
+        .muted { font-size:13px; color:#6b7280; }
+        .footer { background:#f9fafb; border-top:1px solid #eef6f0; padding:14px 18px; font-size:13px; color:#6b7280; text-align:center; }
+        @media (max-width:520px){ .row{flex-direction:column;} .col{min-width:100%} th, td{padding:8px;} }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">HỆ THỐNG QUẢN LÝ NHÀ TRỌ</div>
+    <div class="inner">
+        <h1>Thông báo thanh toán hàng tháng</h1>
+        <p>Xin chào <strong th:text="${ownerName}">Chủ trọ</strong>,</p>
+        <p>Đây là thông tin thanh toán hàng tháng cho phòng của bạn. Bạn có thể gửi link thanh toán hoặc cho khách quét QR để thực hiện thanh toán.</p>
+
+        <div class="info">
+            <div class="row">
+                <div class="col">
+                    <div class="label">Mã payment</div>
+                    <div class="value" th:text="${paymentId}">#PAY-12345</div>
+                </div>
+                <div class="col">
+                    <div class="label">Kỳ thanh toán</div>
+                    <div class="value" th:text="${paymentPeriod}">Tháng 01/2026</div>
+                </div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="label">Phòng</div>
+                    <div class="value" th:text="${roomName}">Phòng A101</div>
+                </div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="label">Địa chỉ</div>
+                    <div class="value" th:text="${roomAddress}">Số 1, Đường ABC</div>
+                </div>
+                <div class="col">
+                    <div class="label">Liên hệ chủ trọ</div>
+                    <div class="value"><span th:text="${ownerPhone}">0123456789</span> · <span th:text="${ownerEmail}">owner@example.com</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="font-weight:700; color:#155e4b; margin-top:8px;">Chi tiết hóa đơn</div>
+        <table>
+            <thead>
+            <tr>
+                <th>Mục</th>
+                <th style="text-align:right">Số cũ</th>
+                <th style="text-align:right">Số mới</th>
+                <th style="text-align:right">Tiêu thụ</th>
+                <th style="text-align:right">Đơn giá</th>
+                <th style="text-align:right">Thành tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Tiền thuê</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td style="text-align:right" th:text="${baseRent}">1.000.000₫</td>
+                <td style="text-align:right" class="amount" th:text="${baseRent}">1.000.000₫</td>
+            </tr>
+            <tr th:each="svc : ${services}">
+                <td th:text="${svc.name}">Điện</td>
+                <td style="text-align:right" th:text="${svc.quantityOld}">100</td>
+                <td style="text-align:right" th:text="${svc.quantityNew}">150</td>
+                <td style="text-align:right" th:text="${svc.quantityUsed}">50</td>
+                <td style="text-align:right" th:text="${svc.pricePerUnit}">10.000₫</td>
+                <td style="text-align:right" th:text="${svc.totalPrice}">500.000₫</td>
+            </tr>
+            <tr>
+                <td colspan="5" style="text-align:right; font-weight:700;">Tổng dịch vụ</td>
+                <td style="text-align:right; font-weight:700;" th:text="${servicesTotal}">100.000₫</td>
+            </tr>
+            <tr>
+                <td colspan="5" style="text-align:right; font-weight:800; font-size:16px;">Tổng thanh toán</td>
+                <td style="text-align:right; font-weight:800; font-size:16px;" th:text="${grandTotal}">1.100.000₫</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="qr" th:if="${vietQR != null}">
+            <div style="font-weight:700; color:#16a085; margin-bottom:6px;">Thanh toán nhanh bằng QR</div>
+            <img th:src="${vietQR}" alt="QR thanh toán" />
+            <div class="muted" style="margin-top:8px;">Quét mã QR bằng ứng dụng ngân hàng để thanh toán nhanh.</div>
+        </div>
+
+        <p class="muted" th:if="${vietQR == null}">Bạn chưa tạo QR. Vui lòng tạo link thanh toán và cập nhật để gửi cho khách hoặc cho họ quét tại chỗ.</p>
+
+        <p class="muted" style="margin-top:14px;">Nếu có thắc mắc, liên hệ bộ phận hỗ trợ hoặc chủ trọ theo thông tin ở trên.</p>
+    </div>
+    <div class="footer">© <span th:text="${year}">2025</span> Hệ thống Quản Lý Nhà Trọ · Mọi quyền được bảo lưu.</div>
+</div>
+</body>
+</html>

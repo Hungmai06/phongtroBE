@@ -2,7 +2,9 @@ package com.example.room.service.Impl;
 
 import com.example.room.dto.request.BookingEmailRequest;
 import com.example.room.dto.request.ContractEmailRequest;
+import com.example.room.dto.request.PaymentMonthlyRequest;
 import com.example.room.service.EmailService;
+import com.example.room.utils.Enums.BookingStatus;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -64,12 +66,23 @@ public class EmailServiceImpl implements EmailService {
         context.setVariable("ownerPhone", request.getOwnerPhone());
         context.setVariable("ownerEmail", request.getOwnerEmail());
 
-        String htmlContent = templateEngine.process("booking-email", context);
+        context.setVariable("note",request.getNote());
 
-        helper.setFrom(fromEmail);
-        helper.setTo(email);
-        helper.setSubject("Xác nhận đặt phòng #" + request.getBookingId());
-        helper.setText(htmlContent, true);
+        if (request.getStatus() == BookingStatus.CONFIRMED){
+            context.setVariable("vietQR",request.getLinkQR());
+            String htmlContent = templateEngine.process("booking-email", context);
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Xác nhận đặt phòng #" + request.getBookingId());
+            helper.setText(htmlContent, true);
+        }
+        if(request.getStatus() == BookingStatus.COMPLETED){
+            String htmlContent = templateEngine.process("booking-successfully", context);
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+            helper.setSubject("Hoàn tất đặt phòng #" + request.getBookingId());
+            helper.setText(htmlContent, true);
+        }
 
         mailSender.send(message);
     }
@@ -135,6 +148,37 @@ public class EmailServiceImpl implements EmailService {
 
         FileSystemResource file = new FileSystemResource(new File(attachmentPath));
         helper.addAttachment(file.getFilename(), file);
+
+        mailSender.send(message);
+    }
+
+    @Override
+    public void sendPaymentMonthly(PaymentMonthlyRequest request, String email) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        Context context = new Context();
+        context.setVariable("paymentId", request.getPaymentId());
+        context.setVariable("paymentPeriod", request.getPaymentPeriod());
+        context.setVariable("roomName", request.getRoomName());
+        context.setVariable("roomAddress", request.getRoomAddress());
+        context.setVariable("ownerName", request.getOwnerName());
+        context.setVariable("ownerPhone", request.getOwnerPhone());
+        context.setVariable("ownerEmail", request.getOwnerEmail());
+
+        context.setVariable("baseRent",  request.getBaseRent());
+        context.setVariable("services", request.getServices());
+        context.setVariable("servicesTotal", request.getServicesTotal());
+        context.setVariable("grandTotal",  request.getGrandTotal());
+
+        context.setVariable("vietQR", request.getVietQR());
+
+        String htmlContent = templateEngine.process("payment-monthly", context);
+
+        helper.setFrom(fromEmail);
+        helper.setTo(email);
+        helper.setSubject("Thông báo thanh toán hàng tháng — " + (request.getRoomName() != null ? request.getRoomName() : ""));
+        helper.setText(htmlContent, true);
 
         mailSender.send(message);
     }

@@ -25,4 +25,6 @@ public class BookingEmailRequest {
     private String ownerName;
     private String ownerEmail;
     private String ownerPhone;
+    private String note;
+    private String linkQR;
 }

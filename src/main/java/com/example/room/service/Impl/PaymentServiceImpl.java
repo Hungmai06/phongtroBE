@@ -1,27 +1,25 @@
 package com.example.room.service.Impl;
 
+import com.example.room.dto.BaseResponse;
 import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.PaymentCreateRequest;
+import com.example.room.dto.request.PaymentMonthlyRequest;
 import com.example.room.dto.request.PaymentUpdateRequest;
 import com.example.room.dto.response.PaymentResponse;
 import com.example.room.exception.InvalidDataException;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.PaymentMapper;
-import com.example.room.model.Booking;
-import com.example.room.model.Contract;
-import com.example.room.model.Payment;
-import com.example.room.repository.BookingRepository;
-import com.example.room.repository.ContractRepository;
-import com.example.room.repository.PaymentRepository;
-import com.example.room.service.ContractService;
-import com.example.room.service.InvoiceService;
-import com.example.room.service.PaymentService;
+import com.example.room.model.*;
+import com.example.room.repository.*;
+import com.example.room.service.*;
 import com.example.room.specification.PaymentSpecification;
+import com.example.room.utils.BankAccountUtils;
 import com.example.room.utils.Enums.BookingStatus;
 import com.example.room.utils.Enums.ContractStatus;
 import com.example.room.utils.Enums.PaymentMethod;
 import com.example.room.utils.Enums.PaymentStatus;
 import com.example.room.utils.Enums.PaymentType;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,14 +29,18 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
-import com.example.room.model.User;
 import com.example.room.utils.Enums.RoleEnum;
 import org.springframework.security.access.AccessDeniedException;
 
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -52,22 +54,90 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final ContractService contractService;
     private final InvoiceService invoiceService;
+    private final RoomRepository roomRepository;
+    private final RoomServiceUsageRepository roomServiceUsageRepository;
+    private final EmailService emailService;
+    private final BankAccountRepository bankAccountRepository;
+    private final BankAccountUtils bankAccountUtils;
 
     @Override
     @Transactional
-    public PaymentResponse createPayment(PaymentCreateRequest request) {
-        Booking booking = bookingRepository.findById(request.getBookingId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Không tìm thấy booking với ID: " + request.getBookingId()));
-        if (booking.getStatus() != BookingStatus.CONFIRMED && request.getPaymentType() == PaymentType.DEPOSIT) {
-        throw new InvalidDataException("Booking phải được xác nhận trước khi tạo thanh toán cọc.");
-        }
-        Payment payment = paymentMapper.toEntity(request);
-        payment.setBooking(booking);
-        payment.setPaymentStatus(PaymentStatus.PENDING);
+    public BaseResponse<PaymentResponse> createPayment(PaymentCreateRequest request) throws MessagingException {
+
+        Payment payment = Payment.builder()
+                .paymentMethod(request.getPaymentMethod())
+                .paymentPeriod(request.getPaymentPeriod())
+                .paymentType(request.getPaymentType())
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+
         switch (request.getPaymentType()) {
             case DEPOSIT:
-                payment.setAmount(booking.getRoom().getDeposit());
+                if(request.getBookingId() != null){
+                    Booking booking = bookingRepository.findById(request.getBookingId())
+                            .orElseThrow(() -> new ResourceNotFoundException(
+                                    "Không tìm thấy booking với ID: " + request.getBookingId()));
+                    if (booking.getStatus() != BookingStatus.CONFIRMED && request.getPaymentType() == PaymentType.DEPOSIT) {
+                        throw new InvalidDataException("Booking phải được xác nhận trước khi tạo thanh toán cọc.");
+                    }
+                    payment.setDescription(request.getDescription());
+                    payment.setBooking(booking);
+                    payment.setAmount(booking.getRoom().getDeposit());
+                }
+                break;
+            case MONTHLY:
+                if(request.getRoomId() != null){
+                    Room room = roomRepository.findById(request.getRoomId()).orElseThrow(
+                            ()-> new ResourceNotFoundException("Không tìm thấy phòng với ID: " + request.getRoomId())
+                    );
+                    List<RoomServiceUsage>serviceUsages = roomServiceUsageRepository.findByRoomIdAndMonth(room.getId(),request.getPaymentPeriod());
+
+                    BigDecimal serviceTotal = serviceUsages.stream()
+                            .map(RoomServiceUsage::getTotalPrice)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    Booking booking = bookingRepository.findById(request.getBookingId())
+                            .orElseThrow(() -> new ResourceNotFoundException(
+                                    "Không tìm thấy booking với ID: " + request.getBookingId()));
+
+                    payment.setAmount(serviceTotal);
+                    String description = "Thanh toán tiền phòng " + room.getName() + " tháng " + request.getPaymentPeriod()+" "+UUID.randomUUID().toString().replace("-","").substring(0,6);
+                    payment.setDescription(description);
+                    payment.setRoom(room);
+                    List<PaymentMonthlyRequest.ServiceItem> serviceItems = new ArrayList<>();
+                    BigDecimal servicesTotal = BigDecimal.ZERO;
+
+                    for(RoomServiceUsage usage : serviceUsages){
+                        PaymentMonthlyRequest.ServiceItem item = PaymentMonthlyRequest.ServiceItem.builder()
+                                .quantityUsed(usage.getQuantityUsed())
+                                .quantityOld(usage.getQuantityOld())
+                                .quantityNew(usage.getQuantityNew())
+                                .name(usage.getName())
+                                .pricePerUnit(usage.getPricePerUnit())
+                                .totalPrice(usage.getTotalPrice())
+                                .build();
+                        servicesTotal.add(usage.getTotalPrice());
+                        serviceItems.add(item);
+                    }
+                    BankAccount bankAccount = room.getOwner().getBankAccount();
+                    PaymentMonthlyRequest monthlyRequest = PaymentMonthlyRequest.builder()
+                            .paymentId(payment.getId())
+                            .paymentPeriod(payment.getPaymentPeriod())
+                            .baseRent(room.getDeposit())
+                            .services(serviceItems)
+                            .roomAddress(room.getAddress())
+                            .roomName(room.getName())
+                            .ownerEmail(room.getOwner().getEmail())
+                            .ownerName(room.getOwner().getFullName())
+                            .ownerPhone(room.getOwner().getPhone())
+                            .servicesTotal(servicesTotal)
+                            .grandTotal(room.getDeposit().add(servicesTotal))
+                            .vietQR(bankAccountUtils.generateVietQR(bankAccount.getBankCode(), bankAccount.getAccountNumber(),
+                                    bankAccount.getAccountName(),
+                                    room.getDeposit().add(servicesTotal),
+                                    description))
+                            .build();
+                    emailService.sendPaymentMonthly(monthlyRequest,booking.getUser().getEmail());
+                }
                 break;
             case OTHER:
                 payment.setAmount(request.getAmount());
@@ -76,18 +146,22 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment savedPayment = paymentRepository.save(payment);
 
-        return paymentMapper.toResponse(savedPayment);
+        return BaseResponse.<PaymentResponse>builder()
+                .data(paymentMapper.toResponse(savedPayment))
+                .code(201)
+                .message("Payment created")
+                .build();
     }
 
 
    @Override
     @Transactional
-    public PaymentResponse updatePaymentStatus(Long id, PaymentUpdateRequest request) {
+    public BaseResponse<PaymentResponse> updatePaymentStatus(Long id, PaymentUpdateRequest request) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy payment với ID: " + id));
         
         if (request.getPaymentStatus() == PaymentStatus.PAID && payment.getPaymentStatus() != PaymentStatus.PAID) {
-        payment.setPaymentDate(LocalDateTime.now());
+            payment.setPaymentDate(LocalDateTime.now());
         }
 
         payment.setPaymentStatus(request.getPaymentStatus());
@@ -97,8 +171,12 @@ public class PaymentServiceImpl implements PaymentService {
             handlePaidPayment(updatedPayment);
         }
 
-        return paymentMapper.toResponse(updatedPayment);
-    }
+        return BaseResponse.<PaymentResponse>builder()
+                .data(paymentMapper.toResponse(updatedPayment))
+                .code(201)
+                .message("Payment updated")
+                .build();
+   }
 
     private void handlePaidPayment(Payment payment) {
         Booking booking = payment.getBooking();
@@ -117,10 +195,10 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public PageResponse<PaymentResponse> getAllPayments(int page, int size, Long bookingId, PaymentType paymentType, PaymentMethod paymentMethod, PaymentStatus paymentStatus, LocalDateTime paymentDate, LocalDateTime createdAt) {
+    public PageResponse<PaymentResponse> getAllPayments(int page, int size, Long bookingId, PaymentType paymentType, PaymentMethod paymentMethod, PaymentStatus paymentStatus, LocalDateTime paymentDate, LocalDate paymentPeriod) {
         Pageable pageable = PageRequest.of(page, size);
 
-        Specification<Payment> spec = PaymentSpecification.filter(bookingId, paymentType, paymentMethod, paymentStatus, paymentDate, createdAt);
+        Specification<Payment> spec = PaymentSpecification.filter(bookingId, paymentType, paymentMethod, paymentStatus, paymentDate, paymentPeriod);
 
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -163,10 +241,14 @@ public class PaymentServiceImpl implements PaymentService {
 
 
     @Override
-    public PaymentResponse getPaymentById(Long id) {
+    public BaseResponse<PaymentResponse> getPaymentById(Long id) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy payment với ID: " + id));
-        return paymentMapper.toResponse(payment);
+        return BaseResponse.<PaymentResponse>builder()
+                .message("Lấy thông tin thanh toán thành công")
+                .code(200)
+                .data(paymentMapper.toResponse(payment))
+                .build();
     }
 
     @Override

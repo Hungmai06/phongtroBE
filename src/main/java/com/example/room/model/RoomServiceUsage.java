@@ -4,6 +4,7 @@ import com.example.room.utils.Enums.RoomServiceUsageStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,7 +28,7 @@ public class RoomServiceUsage extends BaseEntity {
     private Integer quantityOld;
 
     @Column(name = "month", nullable = false)
-    private LocalDateTime month;
+    private LocalDate month;
 
     @Column(name = "quantity_new")
     private Integer quantityNew;

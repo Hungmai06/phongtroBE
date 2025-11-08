@@ -7,26 +7,24 @@ import com.example.room.utils.Enums.PaymentType;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.persistence.criteria.Predicate;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PaymentSpecification {
 
-    /**
-     * Keep the original filter style: accept only the fields listed and return a Specification<Payment>.
-     * If all parameters are null (no filters), return null to indicate "no spec".
-     */
     public static Specification<Payment> filter(
             Long bookingId,
             PaymentType paymentType,
             PaymentMethod paymentMethod,
             PaymentStatus paymentStatus,
             LocalDateTime paymentDate,
-            LocalDateTime createdAt
+            LocalDate paymentPeriod
     ) {
-        // If nothing provided, return null to indicate no filtering (caller can treat null specially)
-        if (bookingId == null && paymentType == null && paymentMethod == null && paymentStatus == null && paymentDate == null && createdAt == null) {
+
+        if (bookingId == null && paymentType == null && paymentMethod == null && paymentStatus == null && paymentDate == null && paymentPeriod == null) {
             return null;
         }
 
@@ -48,8 +46,8 @@ public class PaymentSpecification {
             if (paymentDate != null) {
                 predicates.add(cb.equal(root.get("paymentDate"), paymentDate));
             }
-            if (createdAt != null) {
-                predicates.add(cb.equal(root.get("createdAt"), createdAt));
+            if (paymentPeriod != null) {
+                predicates.add(cb.equal(root.get("paymentPeriod"), paymentPeriod));
             }
 
             if (predicates.isEmpty()) {

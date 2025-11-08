@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -16,11 +17,12 @@ import java.time.LocalDateTime;
 public class PaymentResponse {
     private Long id;
     private Long bookingId;
+    private Long roomId;
     private PaymentType paymentType;
     private BigDecimal amount;
     private String description;
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus;
     private LocalDateTime paymentDate;
-    private LocalDateTime createdAt;
+    private LocalDate paymentPeriod;
 }

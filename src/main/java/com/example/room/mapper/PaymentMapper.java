@@ -10,9 +10,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface PaymentMapper {
 
-    @Mapping(target = "booking", ignore = true)
-    Payment toEntity(PaymentCreateRequest request);
-
     @Mapping(source = "booking.id", target = "bookingId")
+    @Mapping(source = "room.id", target = "roomId")
     PaymentResponse toResponse(Payment payment);
 }
