@@ -30,23 +30,16 @@ public class RoomController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Đăng một phòng trọ mới (chỉ thông tin, không kèm ảnh)")
     @PreAuthorize("hasAuthority('OWNER')")
-    public ResponseEntity<BaseResponse<RoomResponse>> createRoom(
+    public BaseResponse<RoomResponse> createRoom(
             @Valid @RequestBody RoomCreateRequest request
     ) {
-        RoomResponse newRoom = roomService.createRoom(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                BaseResponse.<RoomResponse>builder()
-                        .code(HttpStatus.CREATED.value())
-                        .message("Tạo phòng trọ thành công")
-                        .data(newRoom)
-                        .build()
-        );
+       return roomService.createRoom(request);
     }
 
     @GetMapping("")
     @Operation(summary = "Lấy danh sách phòng trọ có phân trang và lọc")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
-    public ResponseEntity<PageResponse<RoomResponse>> searchRooms(
+    public PageResponse<RoomResponse> searchRooms(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
@@ -55,49 +48,27 @@ public class RoomController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "asc") String sort
     ) {
-        PageResponse<RoomResponse> roomPage = roomService.searchRooms(q, minPrice, maxPrice, minArea, page, size, sort);
-        return ResponseEntity.ok(roomPage);
+       return roomService.searchRooms(q, minPrice, maxPrice, minArea, page, size, sort);
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy thông tin chi tiết của một phòng")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
-    public ResponseEntity<BaseResponse<RoomResponse>> getRoomById(@PathVariable Long id) {
-        // SỬA LỖI TẠI ĐÂY: Khai báo biến room để nhận kết quả
-        RoomResponse room = roomService.getRoomById(id);
-        return ResponseEntity.ok(
-                BaseResponse.<RoomResponse>builder()
-                        .code(HttpStatus.OK.value())
-                        .message("Lấy thông tin phòng thành công")
-                        .data(room)
-                        .build()
-        );
+    public BaseResponse<RoomResponse> getRoomById(@PathVariable Long id) {
+       return  roomService.getRoomById(id);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật thông tin của một phòng")
     @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN') and @securityService.isRoomOwner(#id)")
-    public ResponseEntity<BaseResponse<RoomResponse>> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomUpdateRequest request) {
-        RoomResponse updatedRoom = roomService.updateRoom(id, request);
-        return ResponseEntity.ok(
-                BaseResponse.<RoomResponse>builder()
-                        .code(HttpStatus.OK.value())
-                        .message("Cập nhật thông tin phòng thành công")
-                        .data(updatedRoom)
-                        .build()
-        );
+    public BaseResponse<RoomResponse> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomUpdateRequest request) {
+        return roomService.updateRoom(id, request);
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa một phòng (xóa mềm)")
     @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN') and @securityService.isRoomOwner(#id)")
-    public ResponseEntity<BaseResponse<String>> deleteRoom(@PathVariable Long id) {
+    public void deleteRoom(@PathVariable Long id) {
         roomService.deleteRoom(id);
-        return ResponseEntity.ok(
-                BaseResponse.<String>builder()
-                        .code(HttpStatus.OK.value())
-                        .message("Xóa phòng thành công")
-                        .build()
-        );
     }
 }

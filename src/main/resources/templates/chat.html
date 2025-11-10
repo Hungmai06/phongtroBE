@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Chat Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h2>Chat Realtime Test</h2>
+<input id="senderId" placeholder="Sender ID" value="1">
+<input id="receiverId" placeholder="Receiver ID" value="2">
+<button onclick="connect()">Connect</button>
+<ul id="messages"></ul>
+<input id="msg" placeholder="Type message...">
+<button onclick="send()">Send</button>
+
+<script>
+    let stompClient;
+    function connect() {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        const senderId = document.getElementById('senderId').value;
+        stompClient.connect({}, () => {
+            stompClient.subscribe('/user/' + senderId + '/queue/messages', (frame) => {
+                const msg = JSON.parse(frame.body);
+                add(`[RECV] ${msg.senderName}: ${msg.content}`);
+            });
+        });
+    }
+    function send() {
+        const s = document.getElementById('senderId').value;
+        const r = document.getElementById('receiverId').value;
+        const c = document.getElementById('msg').value;
+        stompClient.send('/app/chat.send', {}, JSON.stringify({ senderId: s, receiverId: r, content: c }));
+        add(`[SEND] ${c}`);
+    }
+    function add(text) {
+        const li = document.createElement('li');
+        li.innerText = text;
+        document.getElementById('messages').appendChild(li);
+    }
+</script>
+</body>
+</html>

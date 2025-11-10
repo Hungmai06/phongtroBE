@@ -33,6 +33,12 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true
+  elasticsearch:
+      uris: http://localhost:9200
 
 springdoc:
   api-docs:
