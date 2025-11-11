@@ -87,12 +87,12 @@ public class User extends BaseEntity implements UserDetails{
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         RoleEnum roleName = role.getName();
-        return List.of(new SimpleGrantedAuthority("ROLE_" + roleName));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + roleName.name()));
     }
 
     @Override
     public String getUsername() {
-        return "";
+        return this.email;
     }
 
     @Override

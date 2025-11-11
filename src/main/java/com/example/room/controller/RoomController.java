@@ -29,7 +29,7 @@ public class RoomController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Đăng một phòng trọ mới (chỉ thông tin, không kèm ảnh)")
-    @PreAuthorize("hasAuthority('OWNER')")
+    @PreAuthorize("hasRole('OWNER')")
     public BaseResponse<RoomResponse> createRoom(
             @Valid @RequestBody RoomCreateRequest request
     ) {
@@ -38,7 +38,7 @@ public class RoomController {
 
     @GetMapping("")
     @Operation(summary = "Lấy danh sách phòng trọ có phân trang và lọc")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     public PageResponse<RoomResponse> searchRooms(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -53,21 +53,21 @@ public class RoomController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy thông tin chi tiết của một phòng")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     public BaseResponse<RoomResponse> getRoomById(@PathVariable Long id) {
        return  roomService.getRoomById(id);
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật thông tin của một phòng")
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN') and @securityService.isRoomOwner(#id)")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') and @securityService.isRoomOwner(#id)")
     public BaseResponse<RoomResponse> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomUpdateRequest request) {
         return roomService.updateRoom(id, request);
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa một phòng (xóa mềm)")
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN') and @securityService.isRoomOwner(#id)")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') and @securityService.isRoomOwner(#id)")
     public void deleteRoom(@PathVariable Long id) {
         roomService.deleteRoom(id);
     }

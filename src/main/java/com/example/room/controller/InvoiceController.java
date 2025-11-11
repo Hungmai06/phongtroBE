@@ -22,7 +22,7 @@ public class InvoiceController {
 
     private final InvoiceService invoiceService;
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     @GetMapping
     public PageResponse<InvoiceResponse> getInvoices(
             @RequestParam int page,
@@ -31,13 +31,13 @@ public class InvoiceController {
       return invoiceService.getInvoices(page, size);
     }
 
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessInvoice(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessInvoice(#id)")
     @GetMapping("/{id}")
     public BaseResponse<InvoiceResponse> getInvoiceById(@PathVariable Long id) {
       return invoiceService.getInvoiceById(id);
     }
 
-    @PreAuthorize("hasAnyAuthority('OWNER', 'RENTER') and @securityService.canAccessInvoice(#id)")
+    @PreAuthorize("hasAnyRole('OWNER', 'RENTER') and @securityService.canAccessInvoice(#id)")
     @GetMapping("/{id}/download")
     public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long id) {
         byte[] pdfBytes = invoiceService.downloadInvoice(id);
@@ -47,7 +47,7 @@ public class InvoiceController {
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
-    @PreAuthorize("hasAnyAuthority('OWNER', 'ADMIN') and @securityService.canAccessInvoice(#id)")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') and @securityService.canAccessInvoice(#id)")
     @PostMapping("/send/{id}")
     public BaseResponse<?> sendInvoice(@PathVariable Long id) {
         invoiceService.sendInvoiceByEmail(id);
@@ -57,7 +57,7 @@ public class InvoiceController {
                 .build();
     }
 
-    @PreAuthorize("hasAuthority('ADMIN') and @securityService.canAccessInvoice(#id)")
+    @PreAuthorize("hasRole('ADMIN') and @securityService.canAccessInvoice(#id)")
     @DeleteMapping("/{id}")
     public BaseResponse<Object> cancelInvoice(@PathVariable Long id) {
         invoiceService.cancelInvoice(id);

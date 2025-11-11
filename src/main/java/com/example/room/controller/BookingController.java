@@ -29,28 +29,28 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    @PreAuthorize("hasAuthority('RENTER')")
+    @PreAuthorize("hasRole('RENTER')")
     @Operation(summary = "Tạo đơn đặt phòng (Renter)")
     public BaseResponse<BookingResponse> createBooking(@Valid @RequestBody BookingCreateRequest request) throws MessagingException {
       return bookingService.createBooking(request);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     @Operation(summary = "Lấy danh sách tất cả booking (Admin xem tất cả, Owner và Renter chỉ xem của mình)")
     public PageResponse<BookingResponse> getAllBookings(@RequestParam Integer page,@RequestParam Integer size) {
         return bookingService.getAllBookings(page, size);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessBooking(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessBooking(#id)")
     @Operation(summary = "Lấy chi tiết một booking theo ID")
     public BaseResponse<BookingResponse> getBookingById(@PathVariable Long id) {
        return bookingService.getBookingById(id);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER') and @securityService.canAccessBooking(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER') and @securityService.canAccessBooking(#id)")
     @Operation(summary = "Cập nhật trạng thái booking (Owner xác nhận, Admin có quyền chỉnh sửa)")
     public BaseResponse<BookingResponse> updateBookingStatus(@PathVariable Long id,
                                                             @Valid @RequestBody BookingUpdateRequest request) throws MessagingException {
@@ -58,7 +58,7 @@ public class BookingController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'RENTER') and @securityService.canAccessBooking(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RENTER') and @securityService.canAccessBooking(#id)")
     @Operation(summary = "Xóa booking (Renter có thể hủy, Admin có thể xóa bất kỳ booking nào)")
     public BaseResponse<?> deleteBooking(@PathVariable Long id) {
         bookingService.deleteBooking(id);

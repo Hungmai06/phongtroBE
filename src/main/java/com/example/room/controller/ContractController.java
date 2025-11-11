@@ -27,7 +27,7 @@ public class ContractController {
     private final ContractService contractService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     @Operation(summary = "Lấy danh sách tất cả hợp đồng (Admin xem tất cả, Owner/Renter chỉ xem hợp đồng của mình)")
     public PageResponse<ContractResponse> getContracts(
             @RequestParam int page,
@@ -36,21 +36,21 @@ public class ContractController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessContract(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessContract(#id)")
     @Operation(summary = "Lấy chi tiết hợp đồng theo ID (Admin/Owner/Renter)")
     public BaseResponse<ContractResponse> getContractById(@PathVariable long id) {
         return contractService.getContractById(id);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER') and @securityService.canAccessContract(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER') and @securityService.canAccessContract(#id)")
     @Operation(summary = "Cập nhật hợp đồng (chỉ Owner hoặc Admin được phép cập nhật)")
     public BaseResponse<ContractResponse>  updateContract(@PathVariable long id, @RequestBody ContractUpdateRequest request) {
         return contractService.updateContract(id, request);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER') and @securityService.canAccessContract(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER') and @securityService.canAccessContract(#id)")
     @Operation(summary = "Xóa hợp đồng (chỉ Owner hoặc Admin được phép xóa)")
     public void deleteContract(@PathVariable long id) {
         contractService.deleteContract(id);
@@ -58,7 +58,7 @@ public class ContractController {
     }
 
     @GetMapping("/{id}/download")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessContract(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessContract(#id)")
     @Operation(summary = "Tải file hợp đồng (chỉ Admin/Owner/Renter của hợp đồng được phép tải)")
     public BaseResponse<?> downloadContractFile(@PathVariable long id) {
         String fileUrl = contractService.downloadContractFile(id);

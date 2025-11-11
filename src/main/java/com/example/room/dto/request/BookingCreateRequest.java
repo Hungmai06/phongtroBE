@@ -10,12 +10,8 @@ public class BookingCreateRequest {
     @NotNull(message = "Room ID is required")
     private Long roomId;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
     @NotNull(message = "Start date is required")
     private LocalDate startDate;
 
     private LocalDate endDate;
-    private BigDecimal totalPrice;
 }

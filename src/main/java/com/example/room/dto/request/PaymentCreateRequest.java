@@ -17,8 +17,6 @@ import java.time.LocalDate;
 @Builder
 public class PaymentCreateRequest {
 
-    private Long roomId;
-
     private Long bookingId;
 
     private LocalDate paymentPeriod;

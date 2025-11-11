@@ -11,6 +11,5 @@ import org.mapstruct.ReportingPolicy;
 public interface PaymentMapper {
 
     @Mapping(source = "booking.id", target = "bookingId")
-    @Mapping(source = "room.id", target = "roomId")
     PaymentResponse toResponse(Payment payment);
 }

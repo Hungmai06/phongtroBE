@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style>
         /* Page margin for PDF rendering */
         @page {
@@ -108,7 +108,8 @@
 
 <div class="meta">
     <p>Số hợp đồng: <b th:text="${contract.id}">-</b></p>
-    <p>Ngày ký: <b th:text="${#dates.format(contract.startDate, 'dd/MM/yyyy')}">-</b></p>
+    <!-- FIX 4: Thay thế #dates bằng #temporals cho kiểu LocalDateTime -->
+    <p>Ngày ký: <b th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">-</b></p>
 </div>
 
 <h3>1. Bên A (Chủ phòng)</h3>
@@ -125,22 +126,29 @@
 <table class="info">
     <tr>
         <th>Tên phòng</th>
-        <td th:text="${room.roomName}">Room Name</td>
+        <!-- FIX 2a: Sửa 'room.roomName' thành 'room.name' -->
+        <td th:text="${room.name}">Room Name</td>
     </tr>
     <tr>
         <th>Địa chỉ</th>
-        <td th:text="${room.roomAddress}">Room Address</td>
+        <!-- FIX 2b: Sửa 'room.roomAddress' thành 'room.address' -->
+        <td th:text="${room.address}">Room Address</td>
     </tr>
     <tr>
         <th>Giá thuê (VNĐ/tháng)</th>
-        <td th:text="${#numbers.formatInteger(room.pricePerMonth)}">0</td>
+        <!-- FIX 2c: Sửa 'room.pricePerMonth' thành 'room.price' -->
+        <td th:text="${room.price != null ? #numbers.formatDecimal(room.price, 0, 'COMMA', 0, 'POINT') : '0'}"></td>
     </tr>
     <tr>
         <th>Thời hạn thuê</th>
         <td>
-            <span th:text="${#dates.format(contract.startDate, 'dd/MM/yyyy')}">Start</span>
-            &nbsp;đến&nbsp;
-            <span th:text="${#dates.format(contract.endDate, 'dd/MM/yyyy')}">End</span>
+            <!-- FIX 4: Thay thế #dates bằng #temporals -->
+            <span th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">Start</span>
+            &#160;đến&#160;
+            <!-- FIX 3: Thêm 'th:if' để xử lý trường hợp endDate là null -->
+            <!-- FIX 4: Thay thế #dates bằng #temporals -->
+            <span th:if="${contract.endDate}" th:text="${#temporals.format(contract.endDate, 'dd/MM/yyyy')}">End</span>
+            <span th:unless="${contract.endDate}">Không xác định</span>
         </td>
     </tr>
 </table>
@@ -168,7 +176,9 @@
 </div>
 
 <div class="footer">
-    <p>Hợp đồng được tạo tự động bởi hệ thống — ngày <span th:text="${#dates.format(contract.startDate, 'dd/MM/yyyy')}">-</span></p>
+    <!-- Dòng 111 (bây giờ là 156): Lỗi gốc. -->
+    <!-- FIX 4: Thay thế #dates bằng #temporals -->
+    <p>Hợp đồng được tạo tự động bởi hệ thống — ngày <span th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">-</span></p>
 </div>
 </div>
 </body>

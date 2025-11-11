@@ -143,10 +143,10 @@ public class ContractServiceImpl implements ContractService {
         Room room = booking.getRoom();
         User renter = booking.getUser();
         User owner = room.getOwner();
-
+        LocalDateTime contractStartDate = (booking.getStartDate() != null) ? booking.getStartDate() : LocalDateTime.now();
         Contract contract = Contract.builder()
                 .booking(booking)
-                .startDate(booking.getStartDate())
+                .startDate(contractStartDate)
                 .endDate(booking.getEndDate())
                 .status(ContractStatus.ACTIVE)
                 .build();

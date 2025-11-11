@@ -80,32 +80,38 @@ public class PaymentServiceImpl implements PaymentService {
                     if (booking.getStatus() != BookingStatus.CONFIRMED && request.getPaymentType() == PaymentType.DEPOSIT) {
                         throw new InvalidDataException("Booking phải được xác nhận trước khi tạo thanh toán cọc.");
                     }
-                    payment.setDescription(request.getDescription());
+                    String description = "Thanh toán cọc cho đặt phòng " + booking.getRoom().getName() + " " + UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+                    payment.setDescription(description);
                     payment.setBooking(booking);
                     payment.setAmount(booking.getRoom().getDeposit());
                 }
                 break;
             case MONTHLY:
-                if(request.getRoomId() != null){
-                    Room room = roomRepository.findById(request.getRoomId()).orElseThrow(
-                            ()-> new ResourceNotFoundException("Không tìm thấy phòng với ID: " + request.getRoomId())
-                    );
-                    List<RoomServiceUsage>serviceUsages = roomServiceUsageRepository.findByRoomIdAndMonth(room.getId(),request.getPaymentPeriod());
+                if (request.getBookingId() != null) {
+                    Contract contract = contractRepository.findByBookingId(request.getBookingId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Hợp đồng cho Booking ID: " + request.getBookingId()));
+                    Booking booking = contract.getBooking();
+                    if(booking == null){
+                        throw new InvalidDataException("Hợp đồng không liên kết với booking nào.");
+                    }
+                    Room room = booking.getRoom();
+                    if(room == null){
+                        throw new InvalidDataException("Booking không liên kết với phòng nào.");
+                    }
+                    List<RoomServiceUsage> serviceUsages = roomServiceUsageRepository.findByRoomIdAndMonth(room.getId(), request.getPaymentPeriod());
 
-                    BigDecimal serviceTotal = serviceUsages.stream()
-                            .map(RoomServiceUsage::getTotalPrice)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    Booking booking = bookingRepository.findById(request.getBookingId())
-                            .orElseThrow(() -> new ResourceNotFoundException(
-                                    "Không tìm thấy booking với ID: " + request.getBookingId()));
-
-                    payment.setAmount(serviceTotal);
+                    BigDecimal servicesTotal = BigDecimal.ZERO;
+                    for (RoomServiceUsage usage : serviceUsages) {
+                        servicesTotal = servicesTotal.add(usage.getTotalPrice());
+                    }
+                    BigDecimal baseRent = room.getPrice(); 
+                    BigDecimal grandTotal = baseRent.add(servicesTotal);
+                    payment.setAmount(grandTotal);
                     String description = "Thanh toán tiền phòng " + room.getName() + " tháng " + request.getPaymentPeriod()+" "+UUID.randomUUID().toString().replace("-","").substring(0,6);
                     payment.setDescription(description);
-                    payment.setRoom(room);
-                    List<PaymentMonthlyRequest.ServiceItem> serviceItems = new ArrayList<>();
-                    BigDecimal servicesTotal = BigDecimal.ZERO;
+                    payment.setContract(contract);
 
+                    List<PaymentMonthlyRequest.ServiceItem> serviceItems = new ArrayList<>();
                     for(RoomServiceUsage usage : serviceUsages){
                         PaymentMonthlyRequest.ServiceItem item = PaymentMonthlyRequest.ServiceItem.builder()
                                 .quantityUsed(usage.getQuantityUsed())
@@ -115,14 +121,13 @@ public class PaymentServiceImpl implements PaymentService {
                                 .pricePerUnit(usage.getPricePerUnit())
                                 .totalPrice(usage.getTotalPrice())
                                 .build();
-                        servicesTotal.add(usage.getTotalPrice());
                         serviceItems.add(item);
                     }
                     BankAccount bankAccount = room.getOwner().getBankAccount();
                     PaymentMonthlyRequest monthlyRequest = PaymentMonthlyRequest.builder()
                             .paymentId(payment.getId())
                             .paymentPeriod(payment.getPaymentPeriod())
-                            .baseRent(room.getDeposit())
+                            .baseRent(room.getPrice())
                             .services(serviceItems)
                             .roomAddress(room.getAddress())
                             .roomName(room.getName())
@@ -130,10 +135,10 @@ public class PaymentServiceImpl implements PaymentService {
                             .ownerName(room.getOwner().getFullName())
                             .ownerPhone(room.getOwner().getPhone())
                             .servicesTotal(servicesTotal)
-                            .grandTotal(room.getDeposit().add(servicesTotal))
+                            .grandTotal(grandTotal)
                             .vietQR(bankAccountUtils.generateVietQR(bankAccount.getBankCode(), bankAccount.getAccountNumber(),
                                     bankAccount.getAccountName(),
-                                    room.getDeposit().add(servicesTotal),
+                                    grandTotal,
                                     description))
                             .build();
                     emailService.sendPaymentMonthly(monthlyRequest,booking.getUser().getEmail());

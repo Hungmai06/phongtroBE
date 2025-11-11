@@ -35,7 +35,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 import lombok.extern.slf4j.Slf4j;
-import com.example.room.utils.Enums.BookingStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -67,12 +66,15 @@ public class BookingServiceImpl implements BookingService {
     public BaseResponse<BookingResponse> createBooking(BookingCreateRequest request) throws MessagingException {
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (room.getStatus() != RoomStatus.AVAILABLE) {
             throw new InvalidDataException("Phòng này hiện không có sẵn hoặc đã được người khác đặt.");
         }
         Booking booking = bookingMapper.toBooking(request);
+        booking.setStartDate(request.getStartDate().atStartOfDay());
+        if (request.getEndDate() != null) {
+            booking.setEndDate(request.getEndDate().atStartOfDay());
+        }
         booking.setRoom(room);
         booking.setUser(user);
         booking.setStatus(BookingStatus.PENDING);
@@ -145,10 +147,8 @@ public class BookingServiceImpl implements BookingService {
             roomRepository.save(room1);
             booking.setStatus(request.getStatus());
             booking = bookingRepository.saveAndFlush(booking);
-            String description = "Thanh toán cọc cho đặt phòng "+ booking.getRoom().getName()+" " + UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
             PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.builder()
                     .amount(new BigDecimal(0))
-                    .description(description)
                     .bookingId(booking.getId())
                     .paymentType(PaymentType.DEPOSIT)
                     .build();
@@ -169,8 +169,8 @@ public class BookingServiceImpl implements BookingService {
                     .totalPrice(booking.getTotalPrice())
                     .userName(user.getFullName())
                     .note("Thanh toán trong vòng 24h để xác nhận đặt phòng")
-                    .linkQR(bankAccountUtils.generateVietQR(bankAccount.getBankCode(), bankAccount.getAccountNumber(),
-                            bankAccount.getAccountName(),booking.getTotalPrice(), description))
+                    //.linkQR(bankAccountUtils.generateVietQR(bankAccount.getBankCode(), bankAccount.getAccountNumber(),
+                            //bankAccount.getAccountName(),booking.getTotalPrice(), description))
                     .build();
             emailService.sendBooking(bookingEmailRequest,user.getEmail());
         }

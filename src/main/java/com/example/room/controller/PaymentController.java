@@ -33,7 +33,7 @@ public class PaymentController{
     private final ContractRepository contractRepository;
 
     @PostMapping("")
-    @PreAuthorize("hasAuthority('OWNER') and @securityService.canAccessBooking(#request.bookingId)")
+    @PreAuthorize("hasRole('OWNER') and @securityService.canAccessBooking(#request.bookingId)")
     @Operation(summary = "Tạo một khoản thanh toán mới (Owner)")
     public BaseResponse<PaymentResponse> createPayment(
             @Valid @RequestBody PaymentCreateRequest request) throws MessagingException {
@@ -41,7 +41,7 @@ public class PaymentController{
     }
 
     @GetMapping("")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     @Operation(summary = "Lấy danh sách thanh toán")
     public PageResponse<PaymentResponse> getAllPayments(
             @RequestParam(defaultValue = "0") int page,
@@ -57,21 +57,21 @@ public class PaymentController{
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessPayment(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessPayment(#id)")
     @Operation(summary = "Lấy chi tiết một khoản thanh toán")
     public BaseResponse<PaymentResponse> getPaymentById(@PathVariable Long id) {
        return  paymentService.getPaymentById(id);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'OWNER') and @securityService.canAccessPayment(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER') and @securityService.canAccessPayment(#id)")
     @Operation(summary = "Cập nhật trạng thái thanh toán (Owner xác nhận đã nhận tiền)")
     public BaseResponse<PaymentResponse> updatePaymentStatus(@PathVariable Long id, @Valid @RequestBody PaymentUpdateRequest request) {
         return paymentService.updatePaymentStatus(id, request);
     }
     
     @PostMapping("/generate-monthly")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BaseResponse<String>> generateMonthlyPayments() {
         paymentService.generateMonthlyPayments();
         return ResponseEntity.ok(
