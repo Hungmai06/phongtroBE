@@ -8,6 +8,5 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface RoomServiceMapper {
 
-    @Mapping(target = "roomId", source = "room.id")
     RoomServiceResponse toResponse(RoomService entity);
 }

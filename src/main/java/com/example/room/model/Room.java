@@ -32,7 +32,7 @@ public class Room extends BaseEntity{
     private List<Image> images = new ArrayList<>();
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<RoomService> services = new ArrayList<>();
+    private List<RoomHasService> roomServices = new ArrayList<>();
 
     @Column(name = "description",nullable = false)
     private String description;

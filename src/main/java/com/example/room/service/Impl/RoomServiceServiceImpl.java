@@ -37,11 +37,6 @@ public class RoomServiceServiceImpl implements RoomServiceService {
     public BaseResponse<RoomServiceResponse> create(RoomServiceCreateRequest request) {
         RoomService entity = new RoomService();
 
-        if (request.getRoomId() != null) {
-            Room room = roomRepository.findById(request.getRoomId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Phòng không tồn tại"));
-            entity.setRoom(room);
-        }
         RoomService saved = roomServiceRepository.save(entity);
         return BaseResponse.<RoomServiceResponse> builder()
                 .code(201)
@@ -58,13 +53,7 @@ public class RoomServiceServiceImpl implements RoomServiceService {
         existing.setName(request.getName());
         existing.setDescription(request.getDescription());
         existing.setPrice(request.getPrice());
-        if (request.getRoomId() != null) {
-            Room room = roomRepository.findById(request.getRoomId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Phòng không tồn tại"));
-            existing.setRoom(room);
-        } else {
-            existing.setRoom(null);
-        }
+
         RoomService saved = roomServiceRepository.save(existing);
         return BaseResponse.<RoomServiceResponse> builder()
                 .code(200)

@@ -18,5 +18,4 @@ public class RoomServiceCreateRequest {
     private String name;
     private String description;
     private BigDecimal price;
-    private Long roomId;
 }

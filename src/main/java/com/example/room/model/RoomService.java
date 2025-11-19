@@ -3,6 +3,8 @@ package com.example.room.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "room_services")
@@ -23,7 +25,6 @@ public class RoomService extends BaseEntity {
     @Column(name = "price", precision = 13, scale = 2, nullable = false)
     private BigDecimal price;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id")
-    private Room room;
+    @OneToMany(mappedBy = "roomService", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomHasService> rooms = new ArrayList<>();
 }

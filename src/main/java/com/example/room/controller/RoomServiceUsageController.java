@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/room-service-usages")
 @RequiredArgsConstructor
-@Tag(name = " API Room Service Usage", description = "Quản lý việc sử dụng dịch vụ theo phòng trọ (điện, nước, wifi, ...)")
+@Tag(name = " API Room Service Usage", description = "Quản lý so lieu  sử dụng dịch vụ theo phòng trọ (điện, nước, wifi, ...)")
 public class RoomServiceUsageController {
 
     private final RoomServiceUsageService roomServiceUsageService;
