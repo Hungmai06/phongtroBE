@@ -3,9 +3,14 @@ package com.example.room.service.Impl;
 import com.example.room.dto.BaseResponse;
 import com.example.room.dto.PageResponse;
 import com.example.room.dto.response.InvoiceResponse;
+import com.example.room.dto.response.PaymentResponse;
+import com.example.room.dto.response.UserResponse;
 import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.ResourceNotFoundException;
+import com.example.room.mapper.ContractMapper;
 import com.example.room.mapper.InvoiceMapper;
+import com.example.room.mapper.PaymentMapper;
+import com.example.room.mapper.UserMapper;
 import com.example.room.model.Contract;
 import com.example.room.model.Invoice;
 import com.example.room.model.Payment;
@@ -32,6 +37,8 @@ import org.thymeleaf.context.Context;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -46,6 +53,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final InvoiceMapper invoiceMapper;
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
+    private final PaymentMapper paymentMapper;
+    private final UserMapper userMapper;
+    private final ContractMapper contractMapper;
 
     @Override
     @Transactional
@@ -155,6 +165,21 @@ public class InvoiceServiceImpl implements InvoiceService {
         } else {
             throw new ForBiddenException("Unauthorized role");
         }
+        List<Payment> payment = invoices.stream().map(Invoice::getPayment).toList();
+        List<InvoiceResponse> invoiceResponses = new ArrayList<>();
+        for(Payment x:payment){
+            InvoiceResponse invoiceResponse = InvoiceResponse.builder()
+                    .contract(contractMapper.toResponse(x.getContract()))
+                    .payment(paymentMapper.toResponse(x))
+                    .user(userMapper.toResponse(currentUser))
+                    .invoiceNumber(x.getInvoice().getInvoiceNumber())
+                    .id(x.getInvoice().getId())
+                    .issueDate(x.getInvoice().getIssueDate())
+                    .totalAmount(x.getInvoice().getTotalAmount())
+                    .status(x.getInvoice().getStatus())
+                    .build();
+            invoiceResponses.add(invoiceResponse);
+        }
 
         return PageResponse.<InvoiceResponse>builder()
                 .pageNumber(invoices.getNumber())
@@ -163,7 +188,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .totalPages(invoices.getTotalPages())
                 .code(200)
                 .message("Lấy danh sách hóa đơn thành công")
-                .data(invoices.stream().map(invoiceMapper::toResponse).toList())
+                .data(invoiceResponses)
                 .build();
     }
 

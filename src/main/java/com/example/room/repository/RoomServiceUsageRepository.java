@@ -12,5 +12,5 @@ import java.util.List;
 public interface RoomServiceUsageRepository extends JpaRepository<RoomServiceUsage,Long> {
     Page<RoomServiceUsage> findByMonth(LocalDateTime month, Pageable pageable);
 
-    List<RoomServiceUsage> findByRoomIdAndMonth(Long roomId, LocalDate month );
+    List<RoomServiceUsage> findByRoomIdAndMonth(Long roomId, LocalDateTime month );
 }

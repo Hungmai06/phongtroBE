@@ -31,6 +31,5 @@ public interface PaymentService {
     );
 
     BaseResponse<PaymentResponse> getPaymentById(Long id);
-
-    void generateMonthlyPayments();
+    void deletePayment(Long id);
 }

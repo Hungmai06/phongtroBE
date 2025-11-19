@@ -71,9 +71,9 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidDataException("Phòng này hiện không có sẵn hoặc đã được người khác đặt.");
         }
         Booking booking = bookingMapper.toBooking(request);
-        booking.setStartDate(request.getStartDate().atStartOfDay());
+        booking.setStartDate(request.getStartDate());
         if (request.getEndDate() != null) {
-            booking.setEndDate(request.getEndDate().atStartOfDay());
+            booking.setEndDate(request.getEndDate());
         }
         booking.setRoom(room);
         booking.setUser(user);
@@ -151,6 +151,8 @@ public class BookingServiceImpl implements BookingService {
                     .amount(new BigDecimal(0))
                     .bookingId(booking.getId())
                     .paymentType(PaymentType.DEPOSIT)
+                    .paymentMethod(PaymentMethod.BANKING)
+                    .paymentPeriod(LocalDateTime.now().plusDays(1L))
                     .build();
             paymentService.createPayment(paymentCreateRequest);
             BankAccount bankAccount = bankAccountRepository.findByUser_Id(owner.getId()).orElseThrow(

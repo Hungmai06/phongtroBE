@@ -257,45 +257,11 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
-    public void generateMonthlyPayments() {
-        LocalDate today = LocalDate.now();
-        List<Contract> activeContracts = contractRepository.findByStatus(ContractStatus.ACTIVE);
-
-        for (Contract contract : activeContracts) {
-            LocalDate start = contract.getStartDate().toLocalDate();
-            LocalDate end = (contract.getEndDate() != null) ? contract.getEndDate().toLocalDate() : today.plusYears(1);
-
-            if (today.isBefore(start) || today.isAfter(end)) {
-                continue;
-            }
-
-            Booking booking = contract.getBooking();
-
-            boolean exists = paymentRepository.existsByBooking_IdAndPaymentTypeAndDescription(
-                booking.getId(),
-                PaymentType.MONTHLY,
-                "Thanh toán tiền phòng tháng " + today.getMonthValue() + "/" + today.getYear()
-            );
-
-            if (!exists) {
-
-                Payment monthlyPayment = Payment.builder()
-                        .booking(booking)
-                        .paymentType(PaymentType.MONTHLY)
-                        .paymentStatus(PaymentStatus.PENDING)
-                        .amount(booking.getRoom().getPrice())
-                        .description("Thanh toán tiền phòng tháng " + today.getMonthValue() + "/" + today.getYear())
-                        .build();
-
-                Payment savedPayment = paymentRepository.save(monthlyPayment);
-
-                try {
-                    invoiceService.createInvoiceRecord(savedPayment.getId());
-                } catch (Exception e) {
-                    log.error("Lỗi khi tự động tạo hóa đơn cho payment ID {}: {}", savedPayment.getId(), e.getMessage());
-                }
-            }
-        }
+    public void deletePayment(Long id) {
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy payment với ID: " + id));
+        payment.setDeleted(true);
+        paymentRepository.save(payment);
     }
+
 }

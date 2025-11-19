@@ -2,6 +2,7 @@ package com.example.room.controller;
 
 import com.example.room.dto.BaseResponse;
 import com.example.room.dto.PageResponse;
+import com.example.room.dto.request.ContractEmailRequest;
 import com.example.room.dto.request.ContractUpdateRequest;
 import com.example.room.dto.response.ContractResponse;
 import com.example.room.service.ContractService;
@@ -29,7 +30,7 @@ public class ContractController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     @Operation(summary = "Lấy danh sách tất cả hợp đồng (Admin xem tất cả, Owner/Renter chỉ xem hợp đồng của mình)")
-    public PageResponse<ContractResponse> getContracts(
+    public PageResponse<ContractEmailRequest> getContracts(
             @RequestParam int page,
             @RequestParam int size) {
         return contractService.getAllContracts(page, size);
@@ -38,7 +39,7 @@ public class ContractController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessContract(#id)")
     @Operation(summary = "Lấy chi tiết hợp đồng theo ID (Admin/Owner/Renter)")
-    public BaseResponse<ContractResponse> getContractById(@PathVariable long id) {
+    public BaseResponse<ContractEmailRequest> getContractById(@PathVariable long id) {
         return contractService.getContractById(id);
     }
 

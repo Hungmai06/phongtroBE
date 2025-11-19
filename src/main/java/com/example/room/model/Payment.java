@@ -47,7 +47,7 @@ public class Payment extends BaseEntity {
     private LocalDateTime paymentDate;
 
     @Column(name = "payment_period")
-    private LocalDate paymentPeriod;
+    private LocalDateTime paymentPeriod;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")

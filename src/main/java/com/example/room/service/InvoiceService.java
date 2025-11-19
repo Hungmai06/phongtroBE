@@ -3,8 +3,6 @@ package com.example.room.service;
 import com.example.room.dto.BaseResponse;
 import com.example.room.dto.PageResponse;
 import com.example.room.dto.response.InvoiceResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 public interface InvoiceService {
     BaseResponse<InvoiceResponse> createInvoiceRecord(Long paymentId);

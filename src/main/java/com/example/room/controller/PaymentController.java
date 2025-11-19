@@ -69,16 +69,5 @@ public class PaymentController{
     public BaseResponse<PaymentResponse> updatePaymentStatus(@PathVariable Long id, @Valid @RequestBody PaymentUpdateRequest request) {
         return paymentService.updatePaymentStatus(id, request);
     }
-    
-    @PostMapping("/generate-monthly")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BaseResponse<String>> generateMonthlyPayments() {
-        paymentService.generateMonthlyPayments();
-        return ResponseEntity.ok(
-                BaseResponse.<String>builder()
-                        .code(HttpStatus.OK.value())
-                        .message("Đã bắt đầu quá trình tạo thanh toán hàng tháng")
-                        .build()
-        );
-    }
+
 }

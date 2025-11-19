@@ -4,6 +4,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class BookingCreateRequest {
@@ -11,7 +12,7 @@ public class BookingCreateRequest {
     private Long roomId;
 
     @NotNull(message = "Start date is required")
-    private LocalDate startDate;
+    private LocalDateTime startDate;
 
-    private LocalDate endDate;
+    private LocalDateTime endDate;
 }

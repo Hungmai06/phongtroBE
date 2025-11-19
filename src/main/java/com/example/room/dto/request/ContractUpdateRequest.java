@@ -3,6 +3,7 @@ package com.example.room.dto.request;
 import com.example.room.utils.Enums.ContractStatus;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data

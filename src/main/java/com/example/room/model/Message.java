@@ -8,7 +8,7 @@ import org.hibernate.annotations.Where;
 @Table(
         name = "messages",
         indexes = {
-                @Index(name = "idx_msg_conv_sentat", columnList = "conversation_id, sent_at DESC")
+                @Index(name = "idx_msg_conv_sentat", columnList = "conversation_id, created_at DESC")
         }
 )
 @Getter

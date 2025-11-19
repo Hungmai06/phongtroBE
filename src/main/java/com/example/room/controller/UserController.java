@@ -2,11 +2,13 @@ package com.example.room.controller;
 
 import com.example.room.dto.BaseResponse;
 import com.example.room.dto.PageResponse;
+import com.example.room.dto.request.ForgotPasswordRequest;
 import com.example.room.dto.request.RoleRequest;
 import com.example.room.dto.request.UserCreateRequest;
 import com.example.room.dto.request.UserUpdateRequest;
 import com.example.room.dto.response.RoleResponse;
 import com.example.room.dto.response.UserResponse;
+import com.example.room.service.OtpService;
 import com.example.room.service.RoleService;
 import com.example.room.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +34,7 @@ import java.util.List;
 @Tag(name = "API USER",description = "API cho người dùng")
 public class UserController {
     private final UserService userService;
-
+    private final OtpService otpService;
     @PostMapping("")
     @Operation(summary = "Tạo Người dùng")
     public BaseResponse<UserResponse> create(@Valid @RequestBody UserCreateRequest request){
@@ -69,4 +71,25 @@ public class UserController {
         return  userService.delete(id);
     }
 
+    @PostMapping("/forgot-password/request-otp")
+    @Operation(summary = "Yêu cầu mã OTP để đặt lại mật khẩu")
+    public BaseResponse<Object> requestOtp(@RequestParam String email) {
+        otpService.generateAndSendOtp(email);
+       return BaseResponse.builder()
+               .code(200)
+               .message("Mã OTP đã được gửi đến email của bạn.")
+                .data(null)
+               .build();
+    }
+
+    @PostMapping("/forgot-password/reset")
+    @Operation(summary = "Đặt lại mật khẩu bằng mã OTP")
+    public BaseResponse<Object> resetPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        userService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return BaseResponse.builder()
+                .code(200)
+                .message("Mật khẩu đã được đặt lại thành công.")
+                .data(null)
+                .build();
+    }
 }

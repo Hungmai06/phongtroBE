@@ -37,6 +37,9 @@ spring:
     elasticsearch:
       repositories:
         enabled: true
+    redis:
+      host: localhost
+      port: 6379
   elasticsearch:
       uris: http://localhost:9200
 
@@ -53,7 +56,7 @@ openapi:
     version: 1.0.0
 
 jwt:
-  expiryMinute: ${JWT_EXPIRY_MINUTE:5}
+  expiryMinute: ${JWT_EXPIRY_MINUTE:60}
   expiryDay: ${JWT_EXPIRY_DAY:14}
   accessKey: ${JWT_ACCESS_KEY:Z3YmEphCpEaLM14gjwN3WWMsNkUJoncebqs6ZIElS0M=}
   refreshKey: ${JWT_REFRESH_KEY:YzWtBjqYoRn5XX+AUkf5iSXGazL5U2LJF3cjR1Ruc3k=}

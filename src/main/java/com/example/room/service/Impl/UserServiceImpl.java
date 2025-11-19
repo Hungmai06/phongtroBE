@@ -13,6 +13,7 @@ import com.example.room.model.User;
 import com.example.room.repository.RoleRepository;
 import com.example.room.repository.UserRepository;
 import com.example.room.service.EmailService;
+import com.example.room.service.OtpService;
 import com.example.room.service.UserService;
 import com.example.room.specification.UserSpecification;
 import com.example.room.utils.Enums.RoleEnum;
@@ -36,7 +37,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final EmailService emailService;
-
+    private final OtpService otpService;
     @Override
     public BaseResponse<UserResponse> create(UserCreateRequest request) {
         Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
@@ -163,5 +164,14 @@ public class UserServiceImpl implements UserService {
                 .data(userMapper.toResponse(user))
                 .message("Cập nhật vai trò  người dùng")
                 .build();
+    }
+
+    @Override
+    public void resetPassword(String email, String otp, String newPassword) {
+        otpService.validateOtp(email, otp);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+        user.setPassword(passwordUtil.encode(newPassword));
+        userRepository.save(user);
     }
 }

@@ -34,7 +34,11 @@ import org.springframework.stereotype.Service;
 import com.example.room.model.Booking; 
 import org.thymeleaf.context.Context;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.mail.MessagingException;
 
 @Service
@@ -50,7 +54,7 @@ public class ContractServiceImpl implements ContractService {
     private final EmailService emailService;
 
     @Override
-    public PageResponse<ContractResponse> getAllContracts(Integer page, Integer size) {
+    public PageResponse<ContractEmailRequest> getAllContracts(Integer page, Integer size) {
         Pageable pageable = PageRequest.of(page, size);
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -73,9 +77,33 @@ public class ContractServiceImpl implements ContractService {
             // Vai trò không xác định, không trả về gì
             throw new ForBiddenException("Your role is not authorized to access this resource.");
         }
+        List<ContractEmailRequest> contractEmailRequests = new ArrayList<>();
+        for (Contract contract : contracts.getContent()) {
+            Room room = contract.getBooking().getRoom();
+            User renter = contract.getBooking().getUser();
+            User owner = room.getOwner();
 
-        return PageResponse.<ContractResponse>builder()
-                .data(contracts.stream().map(contractMapper::toResponse).toList())
+            ContractEmailRequest emailReq = ContractEmailRequest.builder()
+                    .recipientName(renter.getFullName())
+                    .contractId(contract.getId())
+                    .startDate(contract.getStartDate())
+                    .endDate(contract.getEndDate())
+                    .roomName(room.getName())
+                    .roomAddress(room.getAddress())
+                    .price(room.getPrice())
+                    .ownerName(owner.getFullName())
+                    .ownerEmail(owner.getEmail())
+                    .ownerPhone(owner.getPhone())
+                    .renterName(renter.getFullName())
+                    .renterEmail(renter.getEmail())
+                    .renterPhone(renter.getPhone())
+                    .year(LocalDateTime.now().getYear())
+                    .build();
+            contractEmailRequests.add(emailReq);
+        }
+
+        return PageResponse.<ContractEmailRequest>builder()
+                .data(contractEmailRequests)
                 .pageNumber(contracts.getNumber())
                 .pageSize(contracts.getSize())
                 .totalElements(contracts.getTotalElements())
@@ -86,14 +114,34 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
-    public BaseResponse<ContractResponse> getContractById(long id) {
+    public BaseResponse<ContractEmailRequest> getContractById(long id) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
+        Room room = contract.getBooking().getRoom();
+        User renter = contract.getBooking().getUser();
+        User owner = room.getOwner();
 
-        return BaseResponse.<ContractResponse>builder()
+        ContractEmailRequest emailReq = ContractEmailRequest.builder()
+                .recipientName(renter.getFullName())
+                .contractId(contract.getId())
+                .startDate(contract.getStartDate())
+                .endDate(contract.getEndDate())
+                .roomName(room.getName())
+                .roomAddress(room.getAddress())
+                .price(room.getPrice())
+                .ownerName(owner.getFullName())
+                .ownerEmail(owner.getEmail())
+                .ownerPhone(owner.getPhone())
+                .renterName(renter.getFullName())
+                .renterEmail(renter.getEmail())
+                .renterPhone(renter.getPhone())
+                .year(LocalDateTime.now().getYear())
+                .build();
+
+        return BaseResponse.<ContractEmailRequest>builder()
                 .code(200)
                 .message("Lấy thông tin hợp đồng thành công")
-                .data(contractMapper.toResponse(contract))
+                .data(emailReq)
                 .build();
     }
 
@@ -137,7 +185,7 @@ public class ContractServiceImpl implements ContractService {
     }
     @Override
     @Transactional
-    public BaseResponse<ContractResponse> createContractFromBooking(Long bookingId) {
+    public BaseResponse<ContractEmailRequest> createContractFromBooking(Long bookingId) {
 
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
         Room room = booking.getRoom();
@@ -207,10 +255,10 @@ public class ContractServiceImpl implements ContractService {
             log.error("Failed to send contract email to owner {}: {}", owner.getEmail(), e.getMessage());
         }
 
-        return BaseResponse.<ContractResponse>builder()
+        return BaseResponse.<ContractEmailRequest>builder()
                 .code(200)
                 .message("Tạo hợp đồng hợp đồng thành công")
-                .data(contractMapper.toResponse(savedContract))
+                .data(emailReq)
                 .build();
     }
 

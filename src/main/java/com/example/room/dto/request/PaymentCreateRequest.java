@@ -11,6 +11,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -19,7 +20,7 @@ public class PaymentCreateRequest {
 
     private Long bookingId;
 
-    private LocalDate paymentPeriod;
+    private LocalDateTime paymentPeriod;
 
     private String description;
 

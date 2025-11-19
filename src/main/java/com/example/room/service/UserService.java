@@ -16,4 +16,5 @@ public interface UserService {
     BaseResponse<String> delete(Long id);
     PageResponse<UserResponse>  search(String q, Integer page, Integer size,String sort);
     BaseResponse<UserResponse> updateRoleForOwner(Long id) throws MessagingException;
+    void resetPassword(String email, String otp, String newPassword);
 }
