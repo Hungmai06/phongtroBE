@@ -1,0 +1,52 @@
+services:
+  redis:
+    image: redis:7
+    container_name: redis_service
+    ports:
+      - "6379:6379"
+    restart: always
+    networks:
+      - app_network
+
+  elasticsearch:
+    image: elasticsearch:8.15.0
+    container_name: elasticsearch_service
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    restart: always
+    networks:
+      - app_network
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    # Recommended for Elasticsearch 8 on many platforms
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  springboot:
+    # Temporarily use a small, widely-available image to avoid manifest/pull issues from registry mirrors.
+    image: alpine:3.18
+    container_name: springboot_socket
+    depends_on:
+      - redis
+      - elasticsearch
+    restart: always
+    networks:
+      - app_network
+    # Keep the container running so we can verify other services start. Replace this with your actual app command or build config.
+    command: ["tail", "-f", "/dev/null"]
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  es_data:
+    # Use default volume driver; on Windows, ensure Docker has enough resources and file sharing enabled.
+    # If you prefer a named host path, set 'driver_opts' or a host path here (not necessary by default).

@@ -35,12 +35,15 @@ public class RoomServiceServiceImpl implements RoomServiceService {
 
     @Override
     public BaseResponse<RoomServiceResponse> create(RoomServiceCreateRequest request) {
-        RoomService entity = new RoomService();
-
-        RoomService saved = roomServiceRepository.save(entity);
+        RoomService roomService = RoomService.builder()
+                .description(request.getDescription())
+                .name(request.getName())
+                .price(request.getPrice())
+                .build();
+        roomServiceRepository.save(roomService);
         return BaseResponse.<RoomServiceResponse> builder()
                 .code(201)
-                .data(roomServiceMapper.toResponse(entity))
+                .data(roomServiceMapper.toResponse(roomService))
                 .message("Room created successfully")
                 .build();
     }
