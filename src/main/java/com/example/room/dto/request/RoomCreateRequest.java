@@ -16,9 +16,6 @@ public class RoomCreateRequest {
 
     @NotBlank(message = "Tên phòng không được để trống")
     private String name;
-    
-    @NotEmpty(message = "Phải có ít nhất một ảnh")
-    private List<String> images; 
 
     @NotBlank(message = "Mô tả không được để trống")
     private String description;

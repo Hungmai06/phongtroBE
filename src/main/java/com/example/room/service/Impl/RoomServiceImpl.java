@@ -9,11 +9,9 @@ import com.example.room.elasticsearch.RoomSearchService;
 import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.RoomMapper;
-import com.example.room.model.Image;
 import com.example.room.model.Room;
 import com.example.room.model.User;
 import com.example.room.repository.RoomRepository;
-import com.example.room.repository.UserRepository;
 import com.example.room.service.IStorageService;
 import com.example.room.service.RoomService;
 import com.example.room.specification.RoomSpecification;
@@ -27,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -40,16 +39,25 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomMapper roomMapper;
     private final RoomSearchService roomSearchService;
+    private final IStorageService storageService;
 
     @Override
     @Transactional
-    public BaseResponse<RoomResponse> createRoom(RoomCreateRequest request) {
+    public BaseResponse<RoomResponse> createRoom(RoomCreateRequest request,List<MultipartFile> files) {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (!currentUser.getRole().getName().name().equals(RoleEnum.OWNER.name())) {
             throw new ForBiddenException("Chỉ chủ nhà mới có quyền tạo phòng trọ");
         }
 
+        List<String> generatedFileNames = files.stream()
+                .map(storageService::storeFile)
+                .collect(Collectors.toList());
+
+        // Trả về danh sách các URL của ảnh đã upload
+        List<String> imageUrls = generatedFileNames.stream()
+                .map(fileName -> "/api/images/" + fileName)
+                .collect(Collectors.toList());
         Room room = Room.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -60,16 +68,9 @@ public class RoomServiceImpl implements RoomService {
                 .address(request.getAddress())
                 .status(RoomStatus.AVAILABLE)
                 .owner(currentUser)
+                .images(imageUrls)
                 .build();
-        if (request.getImages() != null && !request.getImages().isEmpty()) {
-        List<Image> imageEntities = request.getImages().stream()
-                .map(url -> Image.builder()
-                        .imageUrl(url)
-                        .room(room)
-                        .build())
-                .toList();
-        room.setImages(imageEntities);
-        }
+
         Room savedRoom = roomRepository.save(room);
         roomSearchService.indexRoom(savedRoom);
         return BaseResponse.<RoomResponse>builder()
@@ -81,7 +82,7 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     @Transactional
-    public BaseResponse<RoomResponse> updateRoom(Long id, RoomUpdateRequest request) {
+    public BaseResponse<RoomResponse> updateRoom(Long id, RoomUpdateRequest request,List<MultipartFile> files) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với ID: " + id));
 
@@ -94,18 +95,17 @@ public class RoomServiceImpl implements RoomService {
         if (request.getAddress() != null) room.setAddress(request.getAddress());
         if (request.getStatus() != null) room.setStatus(request.getStatus());
 
-        if (request.getImages() != null) {
-
-            if (room.getImages() == null) {
-                room.setImages(new ArrayList<>());
-            }
-
-            room.getImages().clear();
-
-            List<Image> newImages = request.getImages().stream()
-                    .map(imageUrl -> Image.builder().imageUrl(imageUrl).room(room).build())
+        if (files != null && !files.isEmpty()) {
+            List<String> generatedFileNames = files.stream()
+                    .map(storageService::storeFile)
                     .collect(Collectors.toList());
-            room.getImages().addAll(newImages);
+
+            // Trả về danh sách các URL của ảnh đã upload
+            List<String> imageUrls = generatedFileNames.stream()
+                    .map(fileName -> "/api/images/" + fileName)
+                    .collect(Collectors.toList());
+
+            room.setImages(imageUrls);
         }
 
         Room updatedRoom = roomRepository.save(room);

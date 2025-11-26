@@ -12,7 +12,6 @@ import com.example.room.utils.Enums.RoomStatus;
 @Setter
 public class RoomUpdateRequest {
     private String name;
-    private List<String> images;
     private String description;
     private BigDecimal price;
     private BigDecimal deposit;

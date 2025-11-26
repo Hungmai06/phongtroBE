@@ -8,12 +8,13 @@ import com.example.room.dto.response.RoomResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface RoomService {
 
-    BaseResponse<RoomResponse> createRoom(RoomCreateRequest request);
+    BaseResponse<RoomResponse> createRoom(RoomCreateRequest request, List<MultipartFile> files);
 
-    BaseResponse<RoomResponse> updateRoom(Long id, RoomUpdateRequest request);
+    BaseResponse<RoomResponse> updateRoom(Long id, RoomUpdateRequest request,List<MultipartFile> files);
 
     BaseResponse<RoomResponse> getRoomById(Long id);
 

@@ -18,7 +18,6 @@ import java.util.UUID;
 public class ImageStorageService implements IStorageService {
     private final Path storageFolder = Paths.get("uploads");
 
-    // Constructor: Tự động tạo thư mục khi khởi động service
     public ImageStorageService() {
         try {
             Files.createDirectories(storageFolder);
@@ -63,16 +62,6 @@ public class ImageStorageService implements IStorageService {
 
         } catch (IOException exception) {
             throw new RuntimeException("Lỗi khi lưu file.", exception);
-        }
-    }
-    
-    @Override
-    public void deleteFile(String fileName) {
-        try {
-            Path filePath = this.storageFolder.resolve(fileName).normalize();
-            Files.deleteIfExists(filePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Không thể xóa file: " + fileName, e);
         }
     }
 

@@ -6,6 +6,7 @@ import com.example.room.dto.request.RoomCreateRequest;
 import com.example.room.dto.request.RoomUpdateRequest;
 import com.example.room.dto.response.RoomResponse;
 import com.example.room.service.RoomService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,14 +29,18 @@ public class RoomController {
 
     private final RoomService roomService;
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Đăng một phòng trọ mới (chỉ thông tin, không kèm ảnh)")
+    @PostMapping(consumes = "multipart/form-data")
+    @Operation(summary = "Đăng một phòng trọ mới (thông tin + nhiều ảnh)")
     @PreAuthorize("hasRole('OWNER')")
     public BaseResponse<RoomResponse> createRoom(
-            @Valid @RequestBody RoomCreateRequest request
-    ) {
-       return roomService.createRoom(request);
+            @Valid @RequestPart("data") String request,
+            @RequestPart("files") List<MultipartFile> files
+    )  throws Exception{
+        ObjectMapper mapper = new ObjectMapper();
+        RoomCreateRequest readValue = mapper.readValue(request, RoomCreateRequest.class);
+        return roomService.createRoom(readValue, files);
     }
+
 
     @GetMapping("")
     @Operation(summary = "Lấy danh sách phòng trọ có phân trang và lọc")
@@ -58,12 +64,19 @@ public class RoomController {
        return  roomService.getRoomById(id);
     }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật thông tin của một phòng")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') and @securityService.isRoomOwner(#id)")
-    public BaseResponse<RoomResponse> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomUpdateRequest request) {
-        return roomService.updateRoom(id, request);
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Cập nhật thông tin phòng + ảnh")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN') and @securityService.isRoomOwner(#id)")
+    public BaseResponse<RoomResponse> updateRoom(
+            @PathVariable Long id,
+            @Valid @RequestPart("data") String request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files
+    )  throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        RoomUpdateRequest readValue = mapper.readValue(request, RoomUpdateRequest.class);
+        return roomService.updateRoom(id, readValue, files);
     }
+
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa một phòng (xóa mềm)")
