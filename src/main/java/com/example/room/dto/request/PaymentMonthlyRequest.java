@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 @Data
@@ -17,7 +18,7 @@ import java.util.List;
 public class PaymentMonthlyRequest {
 
     private Long paymentId;
-    private LocalDateTime paymentPeriod;
+    private String paymentPeriod;
 
     private String roomName;
     private String roomAddress;

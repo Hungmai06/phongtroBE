@@ -7,10 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 public interface RoomServiceUsageRepository extends JpaRepository<RoomServiceUsage,Long> {
-    Page<RoomServiceUsage> findByMonth(LocalDateTime month, Pageable pageable);
+    Page<RoomServiceUsage> findByMonth(String month, Pageable pageable);
 
-    List<RoomServiceUsage> findByRoomIdAndMonth(Long roomId, LocalDateTime month );
+    List<RoomServiceUsage> findByRoomIdAndMonth(Long roomId, String month );
 }

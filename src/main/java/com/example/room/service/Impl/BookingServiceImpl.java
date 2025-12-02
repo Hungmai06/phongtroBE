@@ -39,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -152,7 +153,7 @@ public class BookingServiceImpl implements BookingService {
                     .bookingId(booking.getId())
                     .paymentType(PaymentType.DEPOSIT)
                     .paymentMethod(PaymentMethod.BANKING)
-                    .paymentPeriod(LocalDateTime.now().plusDays(1L))
+                    .paymentPeriod(YearMonth.now().toString())
                     .build();
             paymentService.createPayment(paymentCreateRequest);
             BankAccount bankAccount = bankAccountRepository.findByUser_Id(owner.getId()).orElseThrow(

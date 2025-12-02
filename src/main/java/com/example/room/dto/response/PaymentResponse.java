@@ -10,6 +10,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Getter
 @Setter
@@ -24,5 +25,5 @@ public class PaymentResponse {
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus;
     private LocalDateTime paymentDate;
-    private LocalDate paymentPeriod;
+    private String paymentPeriod;
 }

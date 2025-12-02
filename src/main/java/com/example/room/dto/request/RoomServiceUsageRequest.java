@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Data
 @NoArgsConstructor
@@ -23,7 +24,7 @@ public class RoomServiceUsageRequest {
 
     private BigDecimal pricePerUnit;
 
-    private LocalDate month;
+    private String month;
     private LocalDateTime usedAt;
 
     private Long roomId;

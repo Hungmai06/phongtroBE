@@ -22,7 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -36,7 +38,9 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
 
     @Override
     public BaseResponse<RoomServiceUsageResponse> create(RoomServiceUsageRequest request) {
-
+        if (!request.getMonth().matches("^\\d{4}-\\d{2}$")) {
+            throw new IllegalArgumentException("Invalid month format. Expected format: YYYY-MM");
+        }
             Room room = roomRepository.findById(request.getRoomId())
                     .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
             RoomService roomService = roomServiceRepository.findById(request.getRoomServiceId())
@@ -69,7 +73,9 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
     public BaseResponse<RoomServiceUsageResponse> update(Long id, RoomServiceUsageRequest req) {
             RoomServiceUsage usage = roomServiceUsageRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Usage not found"));
-
+        if (!req.getMonth().matches("^\\d{4}-\\d{2}$")) {
+            throw new IllegalArgumentException("Invalid month format. Expected format: YYYY-MM");
+        }
             usage.setName(req.getName());
             usage.setType(req.getType());
             usage.setQuantityOld(req.getQuantityOld());
@@ -110,7 +116,7 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
     }
 
     @Override
-    public PageResponse<RoomServiceUsageResponse> getAll(LocalDateTime month, Integer page, Integer size) {
+    public PageResponse<RoomServiceUsageResponse> getAll(String month, Integer page, Integer size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<RoomServiceUsage> result = (month != null)
                 ? roomServiceUsageRepository.findByMonth(month, pageable)

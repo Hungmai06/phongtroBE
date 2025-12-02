@@ -10,6 +10,7 @@ import org.hibernate.annotations.Where;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Getter
 @Setter
@@ -47,7 +48,7 @@ public class Payment extends BaseEntity {
     private LocalDateTime paymentDate;
 
     @Column(name = "payment_period")
-    private LocalDateTime paymentPeriod;
+    private String paymentPeriod;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")

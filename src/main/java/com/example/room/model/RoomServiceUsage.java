@@ -6,6 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @Entity
 @Table(name = "room_service_usages")
@@ -28,7 +29,7 @@ public class RoomServiceUsage extends BaseEntity {
     private Integer quantityOld;
 
     @Column(name = "month", nullable = false)
-    private LocalDate month;
+    private String month;
 
     @Column(name = "quantity_new")
     private Integer quantityNew;

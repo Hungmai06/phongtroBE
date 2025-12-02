@@ -11,7 +11,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 @RestController
 @RequestMapping("/api/room-service-usages")
@@ -51,7 +53,7 @@ public class RoomServiceUsageController {
     @Operation(summary = "Danh sách sử dụng dịch vụ (phân trang)")
     @GetMapping("")
     public PageResponse<RoomServiceUsageResponse> getAll(
-            @RequestParam LocalDateTime month,
+            @RequestParam String month,
             @RequestParam Integer page,
             @RequestParam Integer size) {
 
