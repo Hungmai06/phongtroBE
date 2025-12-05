@@ -96,13 +96,8 @@ public class RoomServiceImpl implements RoomService {
         if (request.getStatus() != null) room.setStatus(request.getStatus());
 
         if (files != null && !files.isEmpty()) {
-            List<String> generatedFileNames = files.stream()
+            List<String> imageUrls = files.stream()
                     .map(storageService::storeFile)
-                    .collect(Collectors.toList());
-
-            // Trả về danh sách các URL của ảnh đã upload
-            List<String> imageUrls = generatedFileNames.stream()
-                    .map(fileName -> "/api/images/" + fileName)
                     .collect(Collectors.toList());
 
             room.setImages(imageUrls);

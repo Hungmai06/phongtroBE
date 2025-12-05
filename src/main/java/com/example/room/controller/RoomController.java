@@ -44,7 +44,6 @@ public class RoomController {
 
     @GetMapping("")
     @Operation(summary = "Lấy danh sách phòng trọ có phân trang và lọc")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     public PageResponse<RoomResponse> searchRooms(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -59,7 +58,6 @@ public class RoomController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy thông tin chi tiết của một phòng")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     public BaseResponse<RoomResponse> getRoomById(@PathVariable Long id) {
        return  roomService.getRoomById(id);
     }
