@@ -58,7 +58,7 @@ public class ImageStorageService implements IStorageService {
             }
 
             // Trả về đường dẫn public
-            return "/uploads/" + generatedFileName;
+            return "uploads/" + generatedFileName;
 
         } catch (IOException exception) {
             throw new RuntimeException("Lỗi khi lưu file.", exception);
