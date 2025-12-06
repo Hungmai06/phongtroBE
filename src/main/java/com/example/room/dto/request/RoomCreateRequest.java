@@ -1,5 +1,6 @@
 package com.example.room.dto.request;
 
+import com.example.room.utils.Enums.RoomType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,6 +33,9 @@ public class RoomCreateRequest {
     private Float area;
 
     private Integer capacity;
+
+    @NotNull(message = "Loại phòng không được để trống")
+    private RoomType type;
 
     @NotBlank(message = "Địa chỉ không được để trống")
     private String address;

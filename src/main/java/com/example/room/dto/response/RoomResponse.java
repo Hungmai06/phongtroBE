@@ -1,5 +1,6 @@
 package com.example.room.dto.response;
 
+import com.example.room.utils.Enums.RoomType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,5 +24,6 @@ public class RoomResponse {
     private String address;
     private String utilities;
     private RoomStatus status;
+    private RoomType type;
     private String ownerName;
 }

@@ -1,5 +1,6 @@
 package com.example.room.model;
 
+import com.example.room.utils.Enums.RoomType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,6 +55,10 @@ public class Room extends BaseEntity{
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private RoomStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type")
+    private RoomType type;
 
     @ManyToOne
     @JoinColumn(name = "owner_id",nullable = false)

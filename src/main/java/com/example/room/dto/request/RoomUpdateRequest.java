@@ -1,5 +1,6 @@
 package com.example.room.dto.request;
 
+import com.example.room.utils.Enums.RoomType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,5 +20,6 @@ public class RoomUpdateRequest {
     private Integer capacity;
     private String address;
     private String utilities;
+    private RoomType type;
     private RoomStatus status;
 }

@@ -26,12 +26,13 @@ public class RoomSearchController {
     public PageResponse<RoomDocument> searchAdvanced(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) Float minArea,
             @RequestParam(required = false) Float maxArea,
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) throws IOException {
-        return roomSearchService.searchAdvanced(keyword, status, minArea, maxArea, minCapacity, page, size);
+        return roomSearchService.searchAdvanced(keyword, status,type,minArea, maxArea, minCapacity, page, size);
     }
 }

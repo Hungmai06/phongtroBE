@@ -50,6 +50,7 @@ public class RoomSearchService {
     public PageResponse<RoomDocument> searchAdvanced(
             String keyword,
             String status,
+            String type,
             Float minArea,
             Float maxArea,
             Integer minCapacity,
@@ -70,6 +71,13 @@ public class RoomSearchService {
             bool.must(MatchQuery.of(m -> m
                     .field("status")
                     .query(status)
+            )._toQuery());
+        }
+
+        if (type != null && !type.isEmpty()) {
+            bool.must(MatchQuery.of(m -> m
+                    .field("type")
+                    .query(type)
             )._toQuery());
         }
 

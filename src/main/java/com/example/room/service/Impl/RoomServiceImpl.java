@@ -50,14 +50,10 @@ public class RoomServiceImpl implements RoomService {
             throw new ForBiddenException("Chỉ chủ nhà mới có quyền tạo phòng trọ");
         }
 
-        List<String> generatedFileNames = files.stream()
+        List<String> imageUrls = files.stream()
                 .map(storageService::storeFile)
                 .collect(Collectors.toList());
 
-        // Trả về danh sách các URL của ảnh đã upload
-        List<String> imageUrls = generatedFileNames.stream()
-                .map(fileName -> "/api/images/" + fileName)
-                .collect(Collectors.toList());
         Room room = Room.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -68,6 +64,7 @@ public class RoomServiceImpl implements RoomService {
                 .address(request.getAddress())
                 .status(RoomStatus.AVAILABLE)
                 .owner(currentUser)
+                .type(request.getType())
                 .images(imageUrls)
                 .build();
 
@@ -94,7 +91,7 @@ public class RoomServiceImpl implements RoomService {
         if (request.getCapacity() != null) room.setCapacity(request.getCapacity());
         if (request.getAddress() != null) room.setAddress(request.getAddress());
         if (request.getStatus() != null) room.setStatus(request.getStatus());
-
+        if (request.getType() != null) room.setType(request.getType());
         if (files != null && !files.isEmpty()) {
             List<String> imageUrls = files.stream()
                     .map(storageService::storeFile)

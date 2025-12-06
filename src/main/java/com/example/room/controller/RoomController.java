@@ -64,7 +64,6 @@ public class RoomController {
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Cập nhật thông tin phòng + ảnh")
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN') and @securityService.isRoomOwner(#id)")
     public BaseResponse<RoomResponse> updateRoom(
             @PathVariable Long id,
             @Valid @RequestPart("data") String request,
