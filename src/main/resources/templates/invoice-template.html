@@ -1,8 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style>
+        /* Nhúng font Roboto từ resources/fonts */
+        @font-face {
+            font-family: 'Roboto';
+            src: url('fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+            font-weight: 100 900; /* variable font range */
+        }
+
         @page {
             margin: 2cm;
         }
@@ -18,7 +26,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            font-family: 'Roboto', Arial, Helvetica, sans-serif;
             line-height: 1.5;
             font-size: 12pt;
             color: #222;
@@ -73,53 +81,52 @@
 </head>
 <body>
 <div class="container">
-<header>
-    <h1>HÓA ĐƠN THANH TOÁN</h1>
-</header>
+    <header>
+        <h1>HÓA ĐƠN THANH TOÁN</h1>
+    </header>
 
-<div class="meta">
-    <p>Số hóa đơn: <b th:text="${invoiceNumber}">INV-20250101-1234</b></p>
-    <p>Ngày phát hành: <b th:text="${issueDate}">01/01/2025</b></p>
-</div>
+    <div class="meta">
+        <p>Số hóa đơn: <b th:text="${invoiceNumber}">INV-20250101-1234</b></p>
+        <p>Ngày phát hành: <b th:text="${issueDate}">01/01/2025</b></p>
+    </div>
 
-<h3>1. Thông tin khách hàng</h3>
-<p>Họ tên: <b th:text="${customerName}">Nguyễn Văn A</b></p>
-<p>Email: <span th:text="${customerEmail}">customer@example.com</span></p>
-<p>Điện thoại: <span th:text="${customerPhone}">0123456789</span></p>
+    <h3>1. Thông tin khách hàng</h3>
+    <p>Họ tên: <b th:text="${customerName}">Nguyễn Văn A</b></p>
+    <p>Email: <span th:text="${customerEmail}">customer@example.com</span></p>
+    <p>Điện thoại: <span th:text="${customerPhone}">0123456789</span></p>
 
-<h3>2. Thông tin phòng</h3>
-<p>Tên phòng: <b th:text="${roomName}">Phòng 101</b></p>
-<p>Địa chỉ: <span th:text="${roomAddress}">123 Đường ABC</span></p>
+    <h3>2. Thông tin phòng</h3>
+    <p>Tên phòng: <b th:text="${roomName}">Phòng 101</b></p>
+    <p>Địa chỉ: <span th:text="${roomAddress}">123 Đường ABC</span></p>
 
-<h3>3. Chi tiết thanh toán</h3>
-<table class="info">
-    <tr>
-        <th>Loại thanh toán</th>
-        <td th:text="${paymentType}">Tiền cọc</td>
-    </tr>
-    <tr>
-        <th>Mô tả</th>
-        <td th:text="${description}">Thanh toán tiền cọc phòng</td>
-    </tr>
-    <tr>
-        <th>Số tiền</th>
-        <td th:text="${#numbers.formatInteger(amount)} + ' VNĐ'">3.000.000 VNĐ</td>
-    </tr>
-    <tr>
-        <th>Ngày thanh toán</th>
-        <td th:text="${paymentDate}">01/01/2025</td>
-    </tr>
-    <tr class="total-row">
-        <th>Tổng cộng</th>
-        <td th:text="${#numbers.formatInteger(totalAmount)} + ' VNĐ'">3.000.000 VNĐ</td>
-    </tr>
-</table>
+    <h3>3. Chi tiết thanh toán</h3>
+    <table class="info">
+        <tr>
+            <th>Loại thanh toán</th>
+            <td th:text="${paymentType}">Tiền cọc</td>
+        </tr>
+        <tr>
+            <th>Mô tả</th>
+            <td th:text="${description}">Thanh toán tiền cọc phòng</td>
+        </tr>
+        <tr>
+            <th>Số tiền</th>
+            <td th:text="${amount} + ' VNĐ'">3.000.000 VNĐ</td>
+        </tr>
+        <tr>
+            <th>Ngày thanh toán</th>
+            <td th:text="${paymentDate}">01/01/2025</td>
+        </tr>
+        <tr class="total-row">
+            <th>Tổng cộng</th>
+            <td th:text="${totalAmount} + ' VNĐ'">3.000.000 VNĐ</td>
+        </tr>
+    </table>
 
-<div class="footer">
-    <p>Hóa đơn được tạo tự động bởi hệ thống — ngày <span th:text="${issueDate}">01/01/2025</span></p>
-    <p>Cảm ơn quý khách đã sử dụng dịch vụ!</p>
-</div>
+    <div class="footer">
+        <p>Hóa đơn được tạo tự động bởi hệ thống — ngày <span th:text="${issueDate}">01/01/2025</span></p>
+        <p>Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+    </div>
 </div>
 </body>
 </html>
-

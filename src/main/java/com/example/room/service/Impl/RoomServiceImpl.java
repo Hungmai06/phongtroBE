@@ -12,6 +12,7 @@ import com.example.room.mapper.RoomMapper;
 import com.example.room.model.Room;
 import com.example.room.model.User;
 import com.example.room.repository.RoomRepository;
+import com.example.room.repository.UserRepository;
 import com.example.room.service.IStorageService;
 import com.example.room.service.RoomService;
 import com.example.room.specification.RoomSpecification;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomMapper roomMapper;
     private final RoomSearchService roomSearchService;
     private final IStorageService storageService;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -65,6 +68,7 @@ public class RoomServiceImpl implements RoomService {
                 .status(RoomStatus.AVAILABLE)
                 .owner(currentUser)
                 .type(request.getType())
+                .facilities(request.getFacilities())
                 .images(imageUrls)
                 .build();
 
@@ -92,6 +96,7 @@ public class RoomServiceImpl implements RoomService {
         if (request.getAddress() != null) room.setAddress(request.getAddress());
         if (request.getStatus() != null) room.setStatus(request.getStatus());
         if (request.getType() != null) room.setType(request.getType());
+        if (request.getFacilities() != null) room.setFacilities(request.getFacilities());
         if (files != null && !files.isEmpty()) {
             List<String> imageUrls = files.stream()
                     .map(storageService::storeFile)
@@ -101,7 +106,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         Room updatedRoom = roomRepository.save(room);
-        roomSearchService.indexRoom(updatedRoom);
+        roomSearchService.indexRoom(room);
 
         return BaseResponse.<RoomResponse>builder()
                 .code(200)
@@ -134,7 +139,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public PageResponse<RoomResponse> searchRooms(String q, BigDecimal minPrice, BigDecimal maxPrice, Float minArea, int page, int size, String sort) {
+    public PageResponse<RoomResponse> searchRooms(String q, BigDecimal minPrice, BigDecimal maxPrice, Float minArea, int page, int size, String sort,String type,String status) {
         Sort sortOption = Sort.by(Sort.Direction.ASC, "createdAt");
         if ("desc".equalsIgnoreCase(sort)) {
             sortOption = Sort.by(Sort.Direction.DESC, "createdAt");
@@ -142,14 +147,29 @@ public class RoomServiceImpl implements RoomService {
 
         Pageable pageable = PageRequest.of(page, size, sortOption);
         Page<Room> roomPage = roomRepository.findAll(
-                RoomSpecification.filterRooms(q, minPrice, maxPrice, minArea),
+                RoomSpecification.filterRooms(q, minPrice, maxPrice, minArea,type,status),
                 pageable
         );
 
-        List<RoomResponse> roomResponses = roomPage.getContent().stream()
-                .map(roomMapper::toResponse)
-                .collect(Collectors.toList());
+        List<RoomResponse> roomResponses = roomMapper.toResponse(roomPage.getContent());
+        User user = null;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+            user = null;
+        } else {
+            String email = auth.getName();
+            user = userRepository.findByEmail(email).orElse(null);
+        }
+        if(user!= null && user.getRole().getName()==(RoleEnum.OWNER)){
+            List<RoomResponse> filteredRooms = new ArrayList<>();
+            for (RoomResponse roomResponse : roomResponses) {
+                if(roomResponse.getOwnerId() == user.getId()){
+                    filteredRooms.add(roomResponse);
+                }
+            }
+            roomResponses = filteredRooms;
+        }
         return PageResponse.<RoomResponse>builder()
                 .code(200)
                 .totalPages(roomPage.getTotalPages())

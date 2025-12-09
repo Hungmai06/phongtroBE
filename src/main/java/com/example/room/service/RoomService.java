@@ -21,5 +21,5 @@ public interface RoomService {
 
     void deleteRoom(Long id);
 
-    PageResponse<RoomResponse> searchRooms(String q, BigDecimal minPrice, BigDecimal maxPrice, Float minArea, int page, int size, String sort);
+    PageResponse<RoomResponse> searchRooms(String q, BigDecimal minPrice, BigDecimal maxPrice, Float minArea, int page, int size, String sort,String type,String status);
 }

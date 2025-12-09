@@ -3,6 +3,9 @@ package com.example.room.model;
 import com.example.room.utils.Enums.RoomServiceUsageStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.DialectOverride;
+import org.hibernate.annotations.Where;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +19,7 @@ import java.time.YearMonth;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted = false")
 public class RoomServiceUsage extends BaseEntity {
 
     @Column(name = "name", length = 150)
@@ -43,8 +47,6 @@ public class RoomServiceUsage extends BaseEntity {
     @Column(name = "total_price", precision = 13, scale = 2, nullable = false)
     private BigDecimal totalPrice;
 
-    @Column(name = "used_at")
-    private LocalDateTime usedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_service_id")

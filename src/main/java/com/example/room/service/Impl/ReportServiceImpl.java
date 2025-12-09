@@ -60,7 +60,7 @@ public class ReportServiceImpl implements ReportService {
             }
         }
 
-        if (start == null) start = LocalDateTime.of(1970, 1, 1, 0, 0);
+        if (start == null) start = LocalDateTime.of(2025, 1, 1, 0, 0);
         if (end == null) end = LocalDateTime.now();
 
         StringBuilder sql = new StringBuilder();
@@ -68,7 +68,8 @@ public class ReportServiceImpl implements ReportService {
            .append("FROM payments p ")
            .append("JOIN bookings b ON p.booking_id = b.id ")
            .append("JOIN rooms r ON b.room_id = r.id ")
-           .append("WHERE p.payment_date BETWEEN :start AND :end ");
+           .append("WHERE p.payment_date BETWEEN :start AND :end ")
+                .append("AND p.payment_status = :paymentStatus ");
 
         if (ownerId != null) sql.append(" AND r.owner_id = :ownerId ");
         if (roomId != null) sql.append(" AND r.id = :roomId ");
@@ -117,7 +118,7 @@ public class ReportServiceImpl implements ReportService {
             }
         }
 
-        if (start == null) start = LocalDateTime.of(1970, 1, 1, 0, 0);
+        if (start == null) start = LocalDateTime.of(2025, 1, 1, 0, 0);
         if (end == null) end = LocalDateTime.now();
 
         StringBuilder sql = new StringBuilder();
@@ -126,7 +127,8 @@ public class ReportServiceImpl implements ReportService {
            .append("FROM payments p ")
            .append("JOIN bookings b ON p.booking_id = b.id ")
            .append("JOIN rooms r ON b.room_id = r.id ")
-           .append("WHERE p.payment_date BETWEEN :start AND :end ");
+           .append("WHERE p.payment_date BETWEEN :start AND :end ")
+                .append("AND p.payment_status = :paymentStatus ");;
 
         if (ownerId != null) sql.append(" AND r.owner_id = :ownerId ");
         if (roomId != null) sql.append(" AND r.id = :roomId ");

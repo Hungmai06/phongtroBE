@@ -12,6 +12,5 @@ public interface RoomHasServiceMapper {
     @Mapping(source = "room.name", target = "roomName")
     @Mapping(source = "roomService.id", target = "serviceId")
     @Mapping(source = "roomService.name", target = "serviceName")
-    @Mapping(source = "roomService.price", target = "price")
     RoomHasServiceResponse toResponse(RoomHasService entity);
 }

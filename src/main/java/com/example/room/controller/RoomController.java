@@ -51,9 +51,11 @@ public class RoomController {
             @RequestParam(required = false) Float minArea,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "asc") String sort
+            @RequestParam(defaultValue = "asc") String sort,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String status
     ) {
-       return roomService.searchRooms(q, minPrice, maxPrice, minArea, page, size, sort);
+       return roomService.searchRooms(q, minPrice, maxPrice, minArea, page, size, sort,type,status);
     }
 
     @GetMapping("/{id}")

@@ -30,13 +30,14 @@ public class EmailServiceImpl implements EmailService {
     private String fromEmail;
 
     @Override
-    public void sendRegisterSuccessEmail( String email, String fullName) throws MessagingException {
+    public void sendRegisterSuccessEmail( String email, String fullName,String description) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message,true);
 
         Context context = new Context();
         context.setVariable("fullName", fullName);
         context.setVariable("email", email);
+        context.setVariable("description", description);
         String htmlContent = templateEngine.process("register-success",context);
 
         helper.setTo(fromEmail);

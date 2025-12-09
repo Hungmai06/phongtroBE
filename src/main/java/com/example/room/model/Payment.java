@@ -50,7 +50,7 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_period")
     private String paymentPeriod;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")
     private Invoice invoice;
 

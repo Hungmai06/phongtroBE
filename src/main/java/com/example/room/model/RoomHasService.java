@@ -2,6 +2,7 @@ package com.example.room.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "room_has_services")
@@ -10,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Where(clause = "deleted = false")
 public class RoomHasService extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

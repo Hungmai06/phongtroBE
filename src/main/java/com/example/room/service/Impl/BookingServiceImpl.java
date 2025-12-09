@@ -8,6 +8,7 @@ import com.example.room.dto.request.BookingUpdateRequest;
 import com.example.room.dto.request.PaymentCreateRequest;
 import com.example.room.dto.response.BookingResponse;
 import com.example.room.dto.response.UserResponse;
+import com.example.room.elasticsearch.RoomSearchService;
 import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.InvalidDataException;
 import com.example.room.exception.ResourceNotFoundException;
@@ -58,6 +59,7 @@ public class BookingServiceImpl implements BookingService {
     private final PaymentService paymentService;
     private final BankAccountUtils bankAccountUtils;
     private final BankAccountRepository bankAccountRepository;
+    private final RoomSearchService roomSearchService;
 
     @Value("${app.booking.expiration-hours}")
     private long expirationHours;
@@ -146,6 +148,7 @@ public class BookingServiceImpl implements BookingService {
         if(booking.getStatus() == BookingStatus.PENDING && request.getStatus() ==BookingStatus.CONFIRMED){
             room1.setStatus(RoomStatus.RESERVED);
             roomRepository.save(room1);
+            roomSearchService.indexRoom(room1);
             booking.setStatus(request.getStatus());
             booking = bookingRepository.saveAndFlush(booking);
             PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.builder()
@@ -181,6 +184,7 @@ public class BookingServiceImpl implements BookingService {
         if(booking.getStatus() == BookingStatus.CONFIRMED && request.getStatus() == BookingStatus.COMPLETED){
             room1.setStatus(RoomStatus.RENTED);
             roomRepository.save(room1);
+            roomSearchService.indexRoom(room1);
             booking.setStatus(request.getStatus());
             booking = bookingRepository.save(booking);
             BookingEmailRequest bookingEmailRequest = BookingEmailRequest.builder()
@@ -204,6 +208,7 @@ public class BookingServiceImpl implements BookingService {
             if (room != null) {
                 room.setStatus(RoomStatus.AVAILABLE);
                 roomRepository.save(room);
+                roomSearchService.indexRoom(room);
             }
         }
         
@@ -242,6 +247,7 @@ public class BookingServiceImpl implements BookingService {
             if (room != null && room.getStatus() == RoomStatus.RESERVED) {
                 room.setStatus(RoomStatus.AVAILABLE);
                 roomRepository.save(room);
+                roomSearchService.indexRoom(room);
                 log.info("Đã giải phóng phòng ID {} từ booking ID {}.", room.getId(), booking.getId());
             }
         }

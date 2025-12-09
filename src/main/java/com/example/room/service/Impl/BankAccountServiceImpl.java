@@ -13,6 +13,7 @@ import com.example.room.repository.UserRepository;
 import com.example.room.service.BankAccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,25 +31,18 @@ public class BankAccountServiceImpl implements BankAccountService {
     @Override
     @Transactional
     public BaseResponse<BankAccountResponse> create(BankAccountRequest request) {
-
-        Optional<BankAccount> existed = bankAccountRepository.findByAccountNumber(request.getAccountNumber());
-        if (existed.isPresent()) {
-            throw new InvalidDataException("Số tài khoản đã tồn tại");
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<BankAccount> bankAccountOptional = bankAccountRepository.findByUser_Id(user.getId());
+        if(bankAccountOptional.isPresent()){
+            throw new InvalidDataException("Người dùng đã có tài khoản ngân hàng");
         }
-
         BankAccount entity = BankAccount.builder()
                 .bankCode(request.getBankCode())
                 .bankName(request.getBankName())
                 .accountNumber(request.getAccountNumber())
                 .accountName(request.getAccountName())
+                .user(user)
                 .build();
-
-        if (request.getUserId() != null) {
-            User user = userRepository.findById(request.getUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy user với id: " + request.getUserId()));
-            entity.setUser(user);
-        }
-
         BankAccount saved = bankAccountRepository.save(entity);
         return BaseResponse.<BankAccountResponse>builder()
                 .code(201)
@@ -89,6 +83,22 @@ public class BankAccountServiceImpl implements BankAccountService {
                 .message("Cập nhật tài khoản thành công")
                 .data(bankAccountMapper.toResponse(updated))
                 .build();
+    }
+
+    @Override
+    public BaseResponse<BankAccountResponse> getBankAccountByUser() {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Optional<BankAccount> bankAccountOptional = bankAccountRepository.findByUser_Id(user.getId());
+        if (!bankAccountOptional.isPresent()) {
+            throw new ResourceNotFoundException("Người dùng chưa có tài khoản ngân hàng");
+        }
+        BankAccount bankAccount = bankAccountOptional.get();
+            return BaseResponse.<BankAccountResponse>builder()
+                    .code(200)
+                    .data(bankAccountMapper.toResponse(bankAccount))
+                    .message("Lấy thông tin tài khoản ngân hàng thành công")
+                    .build();
+
     }
 
     @Override

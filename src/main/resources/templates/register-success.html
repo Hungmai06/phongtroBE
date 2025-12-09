@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>Đăng ký thành công</title>
+    <title>Thông báo đăng ký làm chủ trọ</title>
     <style>
         body {
           font-family: 'Segoe UI', Roboto, Arial, sans-serif;
@@ -79,8 +79,10 @@
     <div class="header">HỆ THỐNG QUẢN LÝ NHÀ TRỌ</div>
     <div class="content">
         <p>Xin chào <b th:text="${fullName}">Nguyễn Văn A</b>,</p>
-        <p>Chúc mừng bạn đã đăng ký làm <b>Chủ trọ</b> trên hệ thống của chúng tôi!</p>
-        <p>Tài khoản của bạn đã được kích hoạt thành công và sẵn sàng để sử dụng.</p>
+        <p style="font-size:16px; font-weight:700; margin-top:8px;">Thông báo: Yêu cầu đăng ký làm <b>Chủ trọ</b></p>
+
+        <!-- Mô tả chi tiết (có thể là lý do, trạng thái, hướng dẫn tiếp theo) -->
+        <p th:text="${description}" style="color:#4b5563; margin-top:12px;">Yêu cầu của bạn đã được gửi và đang chờ xét duyệt.</p>
 
         <div class="info-box">
             <p><b>Thông tin tài khoản:</b></p>

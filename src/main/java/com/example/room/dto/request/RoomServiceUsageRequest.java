@@ -25,7 +25,6 @@ public class RoomServiceUsageRequest {
     private BigDecimal pricePerUnit;
 
     private String month;
-    private LocalDateTime usedAt;
 
     private Long roomId;
     private Long roomServiceId;

@@ -31,6 +31,9 @@ public class Room extends BaseEntity{
     @Column(name = "image_url")
     private List<String> images;
 
+    @Column(name = "facilities")
+    private List<String> facilities;
+
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomHasService> roomServices = new ArrayList<>();
 

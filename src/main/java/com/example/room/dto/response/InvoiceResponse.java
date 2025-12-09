@@ -12,9 +12,9 @@ import java.time.LocalDateTime;
 public class InvoiceResponse {
     private Long id;
     private String invoiceNumber;
+    private String invoiceFile;
     private LocalDateTime issueDate;
     private BigDecimal totalAmount;
-    private InvoiceStatus status;
     private PaymentResponse payment;
     private ContractResponse contract;
     private UserResponse user;

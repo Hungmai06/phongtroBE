@@ -14,7 +14,7 @@ public interface BookingMapper {
     Booking toBooking(BookingCreateRequest request);
 
 
-    @Mapping(source = "room.id", target = "roomId")
-    @Mapping(source = "user.id", target = "userId")
+    @Mapping(source = "room.name", target = "roomName")
+    @Mapping(source = "user.fullName", target = "nameUser")
     BookingResponse toBookingResponse(Booking booking);
 }

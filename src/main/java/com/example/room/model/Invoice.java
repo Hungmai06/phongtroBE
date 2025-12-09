@@ -31,9 +31,8 @@ public class Invoice extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal totalAmount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private InvoiceStatus status;
+    @Column(name = "invoice_file")
+    private String invoiceFile;
 
     @OneToOne
     @JoinColumn(name = "payment_id", referencedColumnName = "id")

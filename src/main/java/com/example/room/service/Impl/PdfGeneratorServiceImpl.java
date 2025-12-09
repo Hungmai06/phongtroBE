@@ -20,7 +20,7 @@ public class PdfGeneratorServiceImpl implements PdfGeneratorService {
     @Override
     public void generatePdf(String templateName, Context context, String outputPath) {
         try {
-
+            // 1. Render HTML từ Thymeleaf
             String htmlContent = templateEngine.process(templateName, context);
 
             File outputFile = new File(outputPath);
@@ -31,8 +31,28 @@ public class PdfGeneratorServiceImpl implements PdfGeneratorService {
 
             try (OutputStream os = new FileOutputStream(outputFile)) {
                 PdfRendererBuilder builder = new PdfRendererBuilder();
+
+                // 2. baseUri để @font-face url('fonts/...') hoạt động
+                String baseUri = getClass().getResource("/").toString();
+                builder.withHtmlContent(htmlContent, baseUri);
+
+                // 3. Nhúng font Roboto từ classpath: /resources/fonts/Roboto-VariableFont_wdth,wght.ttf
+                builder.useFont(
+                        () -> getClass().getResourceAsStream("/fonts/Roboto-VariableFont_wdth,wght.ttf"),
+                        "Roboto",
+                        400,
+                        PdfRendererBuilder.FontStyle.NORMAL,
+                        true
+                );
+                builder.useFont(
+                        () -> getClass().getResourceAsStream("/fonts/Roboto-VariableFont_wdth,wght.ttf"),
+                        "Roboto",
+                        700,
+                        PdfRendererBuilder.FontStyle.NORMAL,
+                        true
+                );
+
                 builder.useFastMode();
-                builder.withHtmlContent(htmlContent, null);
                 builder.toStream(os);
                 builder.run();
             }

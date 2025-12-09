@@ -40,6 +40,6 @@ public class RoomCreateRequest {
     @NotBlank(message = "Địa chỉ không được để trống")
     private String address;
 
-    private String utilities;
+    private List<String> facilities;
 
 }

@@ -24,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -104,6 +105,27 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public PageResponse<UserResponse> findByRoleName(RoleEnum name, Integer page, Integer size) {
+        Role role = roleRepository.findByName(name).orElseThrow(
+                ()-> new ResourceNotFoundException("Vai trò không tồn tại")
+        );
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<UserResponse> userPage = userRepository.findAllByRole(role, pageable).map(user -> userMapper.toResponse(user));
+        List<UserResponse> userResponses = userPage.getContent().stream().toList();
+        return PageResponse.<UserResponse>builder()
+                .code(200)
+                .data(userResponses)
+                .totalPages(userPage.getTotalPages())
+                .totalElements(userPage.getTotalElements())
+                .pageSize(userPage.getSize())
+                .pageNumber(userPage.getNumber())
+                .message("Lấy danh sách người dùng theo vai trò")
+                .build();
+
+    }
+
+    @Override
     public BaseResponse<String> delete(Long id) {
         User user = userRepository.findById(id).orElseThrow(
                 ()-> new ResourceNotFoundException("Người dùng không tồn tại")
@@ -151,27 +173,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public BaseResponse<UserResponse> updateRoleForOwner(Long id) throws MessagingException {
-        User user = userRepository.findById(id).orElseThrow(
-                ()-> new ResourceNotFoundException("Không tìm thấy người dùng")
-        );
-        Role role= roleRepository.findByName(RoleEnum.OWNER).get();
-        user.setRole(role);
-        userRepository.save(user);
-        emailService.sendRegisterSuccessEmail(user.getEmail(), user.getFullName());
-        return BaseResponse.<UserResponse>builder()
-                .code(200)
-                .data(userMapper.toResponse(user))
-                .message("Cập nhật vai trò  người dùng")
-                .build();
-    }
-
-    @Override
     public void resetPassword(String email, String otp, String newPassword) {
         otpService.validateOtp(email, otp);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
         user.setPassword(passwordUtil.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @Override
+    public void chanegePassword( String oldPassword, String newPassword) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!passwordUtil.matches(oldPassword, user.getPassword())){
+            throw new InvalidDataException("Mật khẩu cũ không đúng");
+        }
+        user.setPassword( passwordUtil.encode(newPassword));
         userRepository.save(user);
     }
 }

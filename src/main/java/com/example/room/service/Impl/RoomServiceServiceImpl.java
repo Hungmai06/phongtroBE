@@ -38,7 +38,6 @@ public class RoomServiceServiceImpl implements RoomServiceService {
         RoomService roomService = RoomService.builder()
                 .description(request.getDescription())
                 .name(request.getName())
-                .price(request.getPrice())
                 .build();
         roomServiceRepository.save(roomService);
         return BaseResponse.<RoomServiceResponse> builder()
@@ -55,7 +54,6 @@ public class RoomServiceServiceImpl implements RoomServiceService {
         // copy mutable fields
         existing.setName(request.getName());
         existing.setDescription(request.getDescription());
-        existing.setPrice(request.getPrice());
 
         RoomService saved = roomServiceRepository.save(existing);
         return BaseResponse.<RoomServiceResponse> builder()

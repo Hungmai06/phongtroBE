@@ -5,14 +5,14 @@ import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.ContractUpdateRequest;
 import com.example.room.dto.request.ContractEmailRequest;
 import com.example.room.dto.response.ContractResponse;
+import com.example.room.dto.response.RoomTenantResponse;
 import com.example.room.exception.ForBiddenException;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.ContractMapper;
-import com.example.room.model.Contract;
-import com.example.room.model.Room;
-import com.example.room.model.User;
+import com.example.room.model.*;
 import com.example.room.repository.BookingRepository;
 import com.example.room.repository.ContractRepository;
+import com.example.room.repository.PaymentRepository;
 import com.example.room.service.ContractService;
 import com.example.room.service.EmailService;
 import com.example.room.service.PdfGeneratorService;
@@ -28,12 +28,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import com.example.room.model.Booking; 
 import org.thymeleaf.context.Context;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -52,6 +54,7 @@ public class ContractServiceImpl implements ContractService {
     private final BookingRepository bookingRepository;
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
+    private final PaymentRepository paymentRepository;
 
     @Override
     public PageResponse<ContractEmailRequest> getAllContracts(Integer page, Integer size) {
@@ -178,16 +181,41 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
-    public String downloadContractFile(long id) {
+    public ResponseEntity<byte[]> downloadContract(long id) {
+
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id: " + id));
-        return contract.getContractFile();
+
+        String publicPath = contract.getContractFile(); // "/uploads/contracts/contract-1.pdf"
+        String fullPath = System.getProperty("user.dir") + publicPath;
+
+        try {
+            byte[] fileBytes = Files.readAllBytes(Path.of(fullPath));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+
+            // 🔥 Dùng ContentDisposition chuẩn để tránh lỗi tải file trên Chrome/Edge
+            headers.setContentDisposition(
+                    ContentDisposition
+                            .attachment()
+                            .filename("contract-" + id + ".pdf")
+                            .build()
+            );
+
+            return new ResponseEntity<>(fileBytes, headers, HttpStatus.OK);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot read PDF file: " + fullPath, e);
+        }
     }
     @Override
     @Transactional
-    public BaseResponse<ContractEmailRequest> createContractFromBooking(Long bookingId) {
-
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+    public BaseResponse<ContractEmailRequest> createContractPayment(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(
+                ()-> new ResourceNotFoundException("Payment not found with id: " + paymentId)
+        );
+        Booking booking = bookingRepository.findById(payment.getBooking().getId()).orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + payment.getBooking().getId()));
         Room room = booking.getRoom();
         User renter = booking.getUser();
         User owner = room.getOwner();
@@ -201,7 +229,8 @@ public class ContractServiceImpl implements ContractService {
 
         // Save contract first so ID is generated
         Contract savedContract = contractRepository.save(contract);
-
+        payment.setContract(savedContract);
+        paymentRepository.save(payment);
         // Prepare Thymeleaf context for PDF
         Context context = new Context();
         context.setVariable("contract", savedContract);
@@ -261,5 +290,67 @@ public class ContractServiceImpl implements ContractService {
                 .data(emailReq)
                 .build();
     }
+    @Override
+    public PageResponse<RoomTenantResponse> getCurrentTenantsForOwner(Integer page, Integer size) {
 
+        User currentUser = (User) SecurityContextHolder.getContext()
+                .getAuthentication().getPrincipal();
+
+        boolean isOwner = currentUser.getRole().getName().name().equals(RoleEnum.OWNER.name());
+        if (!isOwner) {
+            throw new ForBiddenException("Only OWNER can view current tenants");
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        LocalDateTime now = LocalDateTime.now();
+
+        // 🔥 1) Lấy tất cả contract ACTIVE của owner
+        List<Contract> activeContracts = contractRepository.findActiveContractsByOwner(
+                currentUser.getId(),
+                ContractStatus.ACTIVE,
+                now
+        );
+
+        // 🔥 2) Convert sang DTO
+        List<RoomTenantResponse> dtoList = new ArrayList<>();
+
+        for (Contract contract : activeContracts) {
+            Booking booking = contract.getBooking();
+            Room room = booking.getRoom();
+            User renter = booking.getUser();
+
+            RoomTenantResponse dto = RoomTenantResponse.builder()
+                    .roomId(room.getId())
+                    .roomName(room.getName())
+                    .roomAddress(room.getAddress())
+                    .roomStatus(room.getStatus().name())
+                    .renterId(renter.getId())
+                    .renterName(renter.getFullName())
+                    .renterEmail(renter.getEmail())
+                    .renterPhone(renter.getPhone())
+                    .contractId(contract.getId())
+                    .contractStartDate(contract.getStartDate())
+                    .contractEndDate(contract.getEndDate())
+                    .build();
+
+            dtoList.add(dto);
+        }
+
+        // 🔥 3) Tự phân trang bằng tay vì query trả về List
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), dtoList.size());
+
+        List<RoomTenantResponse> pageContent =
+                start >= dtoList.size() ? List.of() : dtoList.subList(start, end);
+
+        return PageResponse.<RoomTenantResponse>builder()
+                .code(200)
+                .message("Lấy danh sách phòng và người thuê hiện tại thành công")
+                .data(pageContent)
+                .pageNumber(page)
+                .pageSize(size)
+                .totalElements(dtoList.size())
+                .totalPages((int) Math.ceil((double) dtoList.size() / size))
+                .build();
+    }
 }

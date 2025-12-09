@@ -53,7 +53,6 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
                     .quantityNew(request.getQuantityNew())
                     .pricePerUnit(request.getPricePerUnit())
                     .month(request.getMonth())
-                    .usedAt(request.getUsedAt())
                     .room(room)
                     .roomService(roomService)
                     .build();
@@ -82,7 +81,6 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
             usage.setQuantityNew(req.getQuantityNew());
             usage.setPricePerUnit(req.getPricePerUnit());
             usage.setMonth(req.getMonth());
-            usage.setUsedAt(req.getUsedAt());
 
             calculateTotal(usage);
             roomServiceUsageRepository.save(usage);
@@ -118,9 +116,12 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
     @Override
     public PageResponse<RoomServiceUsageResponse> getAll(String month, Integer page, Integer size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<RoomServiceUsage> result = (month != null)
-                ? roomServiceUsageRepository.findByMonth(month, pageable)
-                : roomServiceUsageRepository.findAll(pageable);
+        Page<RoomServiceUsage> result = null;
+        if(month != null && !month.equals("")){
+            result = roomServiceUsageRepository.findByMonth(month, pageable);
+        }else{
+            result = roomServiceUsageRepository.findAll(pageable);
+        }
         List<RoomServiceUsageResponse> data = result.getContent().stream()
                 .map(roomServiceUsageMapper::toResponse)
                 .toList();
@@ -145,6 +146,7 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
             usage.setQuantityUsed(used);
         } else {
             usage.setQuantityUsed(1);
+
         }
 
         BigDecimal total = usage.getPricePerUnit()

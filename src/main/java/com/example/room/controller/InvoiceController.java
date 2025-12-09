@@ -40,21 +40,7 @@ public class InvoiceController {
     @PreAuthorize("hasAnyRole('OWNER', 'RENTER') and @securityService.canAccessInvoice(#id)")
     @GetMapping("/{id}/download")
     public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long id) {
-        byte[] pdfBytes = invoiceService.downloadInvoice(id);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "invoice-" + id + ".pdf");
-        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-    }
-
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') and @securityService.canAccessInvoice(#id)")
-    @PostMapping("/send/{id}")
-    public BaseResponse<?> sendInvoice(@PathVariable Long id) {
-        invoiceService.sendInvoiceByEmail(id);
-        return BaseResponse.builder()
-                .code(200)
-                .message("Đã gửi lại hóa đơn thành công")
-                .build();
+        return invoiceService.downloadInvoice(id);
     }
 
     @PreAuthorize("hasRole('ADMIN') and @securityService.canAccessInvoice(#id)")

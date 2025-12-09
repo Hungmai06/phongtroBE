@@ -29,6 +29,11 @@ public class BankAccountController {
     public BaseResponse<BankAccountResponse> getById(@PathVariable Long id) {
         return bankAccountService.getBankAccountById(id);
     }
+    @GetMapping
+    @Operation(summary = "Lấy thông tin tài khoản của chủ trọ")
+    public BaseResponse<BankAccountResponse> getBankAccountByUser() {
+        return bankAccountService.getBankAccountByUser();
+    }
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật tài khoản ngân hàng")

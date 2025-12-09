@@ -1,8 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
+    <meta charset="UTF-8"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style>
+        /* Nhúng font Roboto từ resources/fonts */
+        @font-face {
+            font-family: 'Roboto';
+            src: url('fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+            font-weight: 100 900; /* variable font range */
+        }
+
         /* Page margin for PDF rendering */
         @page {
             margin: 2cm;
@@ -23,7 +31,7 @@
         }
 
         body {
-            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            font-family: 'Roboto', Arial, Helvetica, sans-serif;
             line-height: 1.5;
             font-size: 12pt;
             color: #222;
@@ -102,84 +110,77 @@
 </head>
 <body>
 <div class="container">
-<header>
-    <h1>HỢP ĐỒNG THUÊ PHÒNG</h1>
-</header>
+    <header>
+        <h1>HỢP ĐỒNG THUÊ PHÒNG</h1>
+    </header>
 
-<div class="meta">
-    <p>Số hợp đồng: <b th:text="${contract.id}">-</b></p>
-    <!-- FIX 4: Thay thế #dates bằng #temporals cho kiểu LocalDateTime -->
-    <p>Ngày ký: <b th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">-</b></p>
-</div>
+    <div class="meta">
+        <p>Số hợp đồng: <b th:text="${contract.id}">-</b></p>
+        <p>Ngày ký: <b th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">-</b></p>
+    </div>
 
-<h3>1. Bên A (Chủ phòng)</h3>
-<p>Họ tên: <b th:text="${owner.fullName}">Owner Name</b></p>
-<p>Email: <span th:text="${owner.email}">owner@example.com</span></p>
-<p>Điện thoại: <span th:text="${owner.phone}">0123456789</span></p>
+    <h3>1. Bên A (Chủ phòng)</h3>
+    <p>Họ tên: <b th:text="${owner.fullName}">Owner Name</b></p>
+    <p>Email: <span th:text="${owner.email}">owner@example.com</span></p>
+    <p>Điện thoại: <span th:text="${owner.phone}">0123456789</span></p>
 
-<h3>2. Bên B (Người thuê)</h3>
-<p>Họ tên: <b th:text="${renter.fullName}">Renter Name</b></p>
-<p>Email: <span th:text="${renter.email}">renter@example.com</span></p>
-<p>Điện thoại: <span th:text="${renter.phone}">0987654321</span></p>
+    <h3>2. Bên B (Người thuê)</h3>
+    <p>Họ tên: <b th:text="${renter.fullName}">Renter Name</b></p>
+    <p>Email: <span th:text="${renter.email}">renter@example.com</span></p>
+    <p>Điện thoại: <span th:text="${renter.phone}">0987654321</span></p>
 
-<h3>3. Thông tin phòng thuê</h3>
-<table class="info">
-    <tr>
-        <th>Tên phòng</th>
-        <!-- FIX 2a: Sửa 'room.roomName' thành 'room.name' -->
-        <td th:text="${room.name}">Room Name</td>
-    </tr>
-    <tr>
-        <th>Địa chỉ</th>
-        <!-- FIX 2b: Sửa 'room.roomAddress' thành 'room.address' -->
-        <td th:text="${room.address}">Room Address</td>
-    </tr>
-    <tr>
-        <th>Giá thuê (VNĐ/tháng)</th>
-        <!-- FIX 2c: Sửa 'room.pricePerMonth' thành 'room.price' -->
-        <td th:text="${room.price != null ? #numbers.formatDecimal(room.price, 0, 'COMMA', 0, 'POINT') : '0'}"></td>
-    </tr>
-    <tr>
-        <th>Thời hạn thuê</th>
-        <td>
-            <!-- FIX 4: Thay thế #dates bằng #temporals -->
-            <span th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">Start</span>
-            &#160;đến&#160;
-            <!-- FIX 3: Thêm 'th:if' để xử lý trường hợp endDate là null -->
-            <!-- FIX 4: Thay thế #dates bằng #temporals -->
-            <span th:if="${contract.endDate}" th:text="${#temporals.format(contract.endDate, 'dd/MM/yyyy')}">End</span>
-            <span th:unless="${contract.endDate}">Không xác định</span>
-        </td>
-    </tr>
-</table>
-
-<h3>4. Điều khoản chung</h3>
-<ul>
-    <li>Bên B có trách nhiệm thanh toán tiền thuê đúng hạn và giữ gìn tài sản.</li>
-    <li>Bên A có quyền kiểm tra tình trạng phòng trong thời gian hợp lý.</li>
-    <li>Mọi tranh chấp sẽ được giải quyết bằng thương lượng; nếu không thành, đưa ra Tòa án có thẩm quyền.</li>
-</ul>
-
-<div class="signature">
-    <table>
+    <h3>3. Thông tin phòng thuê</h3>
+    <table class="info">
         <tr>
-            <td style="width:50%;">
-                <b>BÊN A</b><br/>(Ký tên)<br/><br/>
-                <span th:text="${owner.fullName}">Owner Name</span>
-            </td>
-            <td style="width:50%;">
-                <b>BÊN B</b><br/>(Ký tên)<br/><br/>
-                <span th:text="${renter.fullName}">Renter Name</span>
+            <th>Tên phòng</th>
+            <td th:text="${room.name}">Room Name</td>
+        </tr>
+        <tr>
+            <th>Địa chỉ</th>
+            <td th:text="${room.address}">Room Address</td>
+        </tr>
+        <tr>
+            <th>Giá thuê (VNĐ/tháng)</th>
+            <td th:text="${room.price != null ? #numbers.formatDecimal(room.price, 0, 'COMMA', 0, 'POINT') : '0'}"></td>
+        </tr>
+        <tr>
+            <th>Thời hạn thuê</th>
+            <td>
+                <span th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">Start</span>
+                &#160;đến&#160;
+                <span th:if="${contract.endDate}" th:text="${#temporals.format(contract.endDate, 'dd/MM/yyyy')}">End</span>
+                <span th:unless="${contract.endDate}">Không xác định</span>
             </td>
         </tr>
     </table>
-</div>
 
-<div class="footer">
-    <!-- Dòng 111 (bây giờ là 156): Lỗi gốc. -->
-    <!-- FIX 4: Thay thế #dates bằng #temporals -->
-    <p>Hợp đồng được tạo tự động bởi hệ thống — ngày <span th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">-</span></p>
-</div>
+    <h3>4. Điều khoản chung</h3>
+    <ul>
+        <li>Bên B có trách nhiệm thanh toán tiền thuê đúng hạn và giữ gìn tài sản.</li>
+        <li>Bên A có quyền kiểm tra tình trạng phòng trong thời gian hợp lý.</li>
+        <li>Mọi tranh chấp sẽ được giải quyết bằng thương lượng; nếu không thành, đưa ra Tòa án có thẩm quyền.</li>
+    </ul>
+
+    <div class="signature">
+        <table>
+            <tr>
+                <td style="width:50%;">
+                    <b>BÊN A</b><br/>(Ký tên)<br/><br/>
+                    <span th:text="${owner.fullName}">Owner Name</span>
+                </td>
+                <td style="width:50%;">
+                    <b>BÊN B</b><br/>(Ký tên)<br/><br/>
+                    <span th:text="${renter.fullName}">Renter Name</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Hợp đồng được tạo tự động bởi hệ thống — ngày
+            <span th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy')}">-</span>
+        </p>
+    </div>
 </div>
 </body>
 </html>

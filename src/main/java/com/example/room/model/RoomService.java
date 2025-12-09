@@ -2,6 +2,8 @@ package com.example.room.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Where;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Where(clause = "deleted = false")
 public class RoomService extends BaseEntity {
 
     @Column(name = "name", nullable = false, length = 150)
@@ -21,9 +24,6 @@ public class RoomService extends BaseEntity {
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "price", precision = 13, scale = 2, nullable = false)
-    private BigDecimal price;
 
     @OneToMany(mappedBy = "roomService", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomHasService> rooms = new ArrayList<>();

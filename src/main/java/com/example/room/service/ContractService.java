@@ -5,10 +5,12 @@ import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.ContractEmailRequest;
 import com.example.room.dto.request.ContractUpdateRequest;
 import com.example.room.dto.response.ContractResponse;
+import com.example.room.dto.response.RoomTenantResponse;
 import com.example.room.model.Booking;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 
 
 public interface ContractService {
@@ -21,6 +23,7 @@ public interface ContractService {
 
     void deleteContract(long id);
 
-    String downloadContractFile(long id);
-    BaseResponse<ContractEmailRequest> createContractFromBooking(Long bookingId);
+    ResponseEntity<byte[]> downloadContract(long id);
+    BaseResponse<ContractEmailRequest> createContractPayment(Long bookingId);
+    PageResponse<RoomTenantResponse> getCurrentTenantsForOwner(Integer page, Integer size);
 }

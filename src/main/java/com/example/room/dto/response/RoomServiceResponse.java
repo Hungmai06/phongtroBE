@@ -12,5 +12,4 @@ public class RoomServiceResponse {
     private Long id;
     private String name;
     private String description;
-    private BigDecimal price;
 }

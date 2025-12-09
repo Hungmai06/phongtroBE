@@ -22,4 +22,5 @@ public class RoomUpdateRequest {
     private String utilities;
     private RoomType type;
     private RoomStatus status;
+    private List<String> facilities;
 }

@@ -27,6 +27,4 @@ public class BankAccountRequest {
 
     @Size(max = 200, message = "Tên chủ tài khoản tối đa 200 ký tự")
     private String accountName;
-
-    private Long userId;
 }

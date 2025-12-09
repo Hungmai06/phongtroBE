@@ -5,10 +5,15 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.json.JsonData;
 import com.example.room.dto.PageResponse;
 import com.example.room.model.Room;
+import com.example.room.utils.Enums.RoomStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -18,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RoomSearchService {
 
     private final ElasticsearchClient elasticsearchClient;
@@ -26,37 +32,48 @@ public class RoomSearchService {
     public void indexRoom(Room room) {
         try {
             RoomDocument doc = RoomMapper.toDocument(room);
-            elasticsearchClient.index(i -> i
+            IndexResponse response = elasticsearchClient.index(i -> i
                     .index(INDEX_NAME)
                     .id(doc.getId())
                     .document(doc)
+                    // ensure doc is visible for search right away; can be changed to WaitFor or True depending on needs
+                    .refresh(Refresh.WaitFor)
             );
+            if (response.result() != null) {
+                log.debug("Indexed room id={} result={}", doc.getId(), response.result().jsonValue());
+            } else {
+                log.debug("Indexed room id={} (no result returned)", doc.getId());
+            }
         } catch (IOException e) {
+            log.error("Không thể index Room id={} vào Elasticsearch", room != null && room.getId() != null ? room.getId() : null, e);
             throw new RuntimeException("Không thể index Room vào Elasticsearch", e);
         }
     }
 
     public void deleteById(String id) {
         try {
-            elasticsearchClient.delete(d -> d
+            DeleteResponse response = elasticsearchClient.delete(d -> d
                     .index(INDEX_NAME)
                     .id(id)
+                    .refresh(Refresh.WaitFor)
             );
+            log.debug("Deleted room id={} result={}", id, response.result() != null ? response.result().jsonValue() : null);
         } catch (IOException e) {
+            log.error("Không thể xóa Room id={} khỏi Elasticsearch", id, e);
             throw new RuntimeException("Không thể xóa Room khỏi Elasticsearch", e);
         }
     }
 
     public PageResponse<RoomDocument> searchAdvanced(
-            String keyword,
-            String status,
-            String type,
-            Float minArea,
-            Float maxArea,
-            Integer minCapacity,
-            int page,
-            int size
-    ) throws IOException {
+             String keyword,
+             String status,
+             String type,
+             Float minArea,
+             Float maxArea,
+             Integer minCapacity,
+             int page,
+             int size
+     ) throws IOException {
 
         BoolQuery.Builder bool = new BoolQuery.Builder();
 
@@ -70,14 +87,13 @@ public class RoomSearchService {
         if (status != null && !status.isEmpty()) {
             bool.must(MatchQuery.of(m -> m
                     .field("status")
-                    .query(status)
+                    .query(status.toUpperCase())
             )._toQuery());
         }
-
         if (type != null && !type.isEmpty()) {
             bool.must(MatchQuery.of(m -> m
                     .field("type")
-                    .query(type)
+                    .query(type.toUpperCase())
             )._toQuery());
         }
 
@@ -101,7 +117,7 @@ public class RoomSearchService {
         int from = page * size;
 
         SearchRequest request = SearchRequest.of(s -> s
-                .index("rooms")
+                .index(INDEX_NAME)
                 .from(from)
                 .size(size)
                 .query(q -> q.bool(bool.build()))

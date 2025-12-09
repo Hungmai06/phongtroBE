@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 @Data
 public class BookingResponse {
     private Long id;
-    private Long roomId;
-    private Long userId;
+    private String roomName;
+    private String nameUser;
     private LocalDate startDate;
     private LocalDate endDate;
     private BigDecimal totalPrice;

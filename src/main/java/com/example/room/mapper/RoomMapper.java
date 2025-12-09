@@ -6,11 +6,11 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface RoomMapper {
     @Mapping(source = "owner.fullName", target = "ownerName")
+    @Mapping(source = "owner.id", target = "ownerId")
     RoomResponse toResponse(Room room);
-
+    List<RoomResponse> toResponse(List<Room> rooms);
 }

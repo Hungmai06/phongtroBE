@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     Page<Invoice> findByUser_Id(Long userId, Pageable pageable);
     Page<Invoice> findByContract_Booking_Room_Owner_Id(Long ownerId, Pageable pageable);
+    Page<Invoice> findByContract_IdIn(java.util.List<Long> contractIds, Pageable pageable);
     boolean existsByPaymentId(Long paymentId);
 
     Optional<Invoice> findByPaymentId(Long paymentId);

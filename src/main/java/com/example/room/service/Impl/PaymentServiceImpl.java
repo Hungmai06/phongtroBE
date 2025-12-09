@@ -188,7 +188,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         boolean contractExists = booking.getContracts() != null && !booking.getContracts().isEmpty();
         if (!contractExists && payment.getPaymentType() == PaymentType.DEPOSIT) {
-            contractService.createContractFromBooking(booking.getId());
+            contractService.createContractPayment(payment.getId());
         }
 
         try {

@@ -11,5 +11,6 @@ public interface BankAccountService {
 
     BaseResponse<BankAccountResponse> update(Long id, BankAccountRequest request) ;
 
+    BaseResponse<BankAccountResponse> getBankAccountByUser();
     void delete(Long id);
 }

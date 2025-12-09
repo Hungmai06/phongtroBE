@@ -11,6 +11,8 @@ import com.example.room.dto.response.UserResponse;
 import com.example.room.service.OtpService;
 import com.example.room.service.RoleService;
 import com.example.room.service.UserService;
+import com.example.room.utils.Enums.RoleEnum;
+import com.openhtmltopdf.css.parser.property.PrimitivePropertyBuilders;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
@@ -53,16 +55,18 @@ public class UserController {
         return  userService.update(id, request);
     }
 
-    @PutMapping("/{id}/role")
-    @Operation(summary = "Cập nhật quyền cho người dùng")
-    public BaseResponse<UserResponse> updateRole(@PathVariable Long id) throws MessagingException {
-        return  userService.updateRoleForOwner(id);
-    }
-
     @GetMapping("/{id}")
     @Operation(summary = "Lấy thông tin người dùng theo id")
     public BaseResponse<UserResponse> getUserById(@PathVariable Long id){
         return  userService.findById(id);
+    }
+
+    @GetMapping("/role/{name}")
+    @Operation(summary ="Lấy danh sách user theo vai trò" )
+    public PageResponse<UserResponse> getAllUserByRoleName(@RequestParam Integer page,
+                                                           @RequestParam Integer size,
+                                                           @PathVariable RoleEnum name){
+        return  userService.findByRoleName(name, page, size);
     }
 
     @DeleteMapping("/{id}")
@@ -89,6 +93,18 @@ public class UserController {
         return BaseResponse.builder()
                 .code(200)
                 .message("Mật khẩu đã được đặt lại thành công.")
+                .data(null)
+                .build();
+    }
+
+    @PutMapping("/change-password")
+    @Operation(summary = "Đổi mật khẩu")
+    public BaseResponse<?> changePassword(@RequestParam String oldPassword,
+                                               @RequestParam String newPassword) {
+        userService.chanegePassword(oldPassword, newPassword);
+        return BaseResponse.builder()
+                .code(200)
+                .message("Mật khẩu đã được đổi thành công.")
                 .data(null)
                 .build();
     }

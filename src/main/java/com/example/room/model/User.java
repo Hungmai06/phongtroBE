@@ -84,7 +84,6 @@ public class User extends BaseEntity implements UserDetails{
     @OneToMany(mappedBy = "user2", cascade = CascadeType.ALL, orphanRemoval = false)
     private List<Conversation> conversationsAsUser2 = new ArrayList<>();
 
-    @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         RoleEnum roleName = role.getName();
         return List.of(new SimpleGrantedAuthority("ROLE_" + roleName.name()));

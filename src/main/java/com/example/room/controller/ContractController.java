@@ -5,6 +5,7 @@ import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.ContractEmailRequest;
 import com.example.room.dto.request.ContractUpdateRequest;
 import com.example.room.dto.response.ContractResponse;
+import com.example.room.dto.response.RoomTenantResponse;
 import com.example.room.service.ContractService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,12 +62,15 @@ public class ContractController {
     @GetMapping("/{id}/download")
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessContract(#id)")
     @Operation(summary = "Tải file hợp đồng (chỉ Admin/Owner/Renter của hợp đồng được phép tải)")
-    public BaseResponse<?> downloadContractFile(@PathVariable long id) {
-        String fileUrl = contractService.downloadContractFile(id);
-        return BaseResponse.builder()
-                .code(200)
-                .message("Download Successfully")
-                .data(fileUrl)
-                .build();
+    public ResponseEntity<byte[]> download(@PathVariable Long id) {
+        return contractService.downloadContract(id);
+
+    }
+    @GetMapping("/user/current-tenants")
+    public PageResponse<RoomTenantResponse> getCurrentTenants(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
+        return contractService.getCurrentTenantsForOwner(page, size);
     }
 }
