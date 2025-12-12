@@ -18,6 +18,7 @@ import java.time.YearMonth;
 @Setter
 @Builder
 public class PaymentCreateRequest {
+    private Long roomId;
 
     private Long bookingId;
 

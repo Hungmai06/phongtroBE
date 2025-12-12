@@ -157,7 +157,9 @@ public class ContractServiceImpl implements ContractService {
         if (request.getEndDate() != null) {
             contract.setEndDate(request.getEndDate());
         }
-
+        if( request.getStatus() == ContractStatus.EXPIRED) {
+            contract.setStatus(ContractStatus.EXPIRED);
+        }
         if (request.getStatus() == ContractStatus.TERMINATED) {
             contract.setStatus(ContractStatus.TERMINATED);
         }
@@ -318,22 +320,23 @@ public class ContractServiceImpl implements ContractService {
             Booking booking = contract.getBooking();
             Room room = booking.getRoom();
             User renter = booking.getUser();
+            if(room.getStatus().equals(RoomStatus.RENTED)) {
+                RoomTenantResponse dto = RoomTenantResponse.builder()
+                        .roomId(room.getId())
+                        .roomName(room.getName())
+                        .roomAddress(room.getAddress())
+                        .roomStatus(room.getStatus().name())
+                        .renterId(renter.getId())
+                        .renterName(renter.getFullName())
+                        .renterEmail(renter.getEmail())
+                        .renterPhone(renter.getPhone())
+                        .contractId(contract.getId())
+                        .contractStartDate(contract.getStartDate())
+                        .contractEndDate(contract.getEndDate())
+                        .build();
 
-            RoomTenantResponse dto = RoomTenantResponse.builder()
-                    .roomId(room.getId())
-                    .roomName(room.getName())
-                    .roomAddress(room.getAddress())
-                    .roomStatus(room.getStatus().name())
-                    .renterId(renter.getId())
-                    .renterName(renter.getFullName())
-                    .renterEmail(renter.getEmail())
-                    .renterPhone(renter.getPhone())
-                    .contractId(contract.getId())
-                    .contractStartDate(contract.getStartDate())
-                    .contractEndDate(contract.getEndDate())
-                    .build();
-
-            dtoList.add(dto);
+                dtoList.add(dto);
+            }
         }
 
         // 🔥 3) Tự phân trang bằng tay vì query trả về List

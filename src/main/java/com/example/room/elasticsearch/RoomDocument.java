@@ -31,6 +31,7 @@ public class RoomDocument {
     private String status;// AVAILABLE, RENTED, MAINTENANCE...
     private String type; // APARTMENT, HOUSE, STUDIO...
     private String ownerName;
+    private Long ownerId;
     private Boolean deleted;
 
 }

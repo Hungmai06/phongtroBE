@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -139,45 +140,72 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public PageResponse<RoomResponse> searchRooms(String q, BigDecimal minPrice, BigDecimal maxPrice, Float minArea, int page, int size, String sort,String type,String status) {
+    public PageResponse<RoomResponse> searchRooms(String q,
+                                                  BigDecimal minPrice,
+                                                  BigDecimal maxPrice,
+                                                  Float minArea,
+                                                  int page,
+                                                  int size,
+                                                  String sort,
+                                                  String type,
+                                                  String status) {
+
+        // ===============================
+        // 1. Xác định sort + pageable
+        // ===============================
         Sort sortOption = Sort.by(Sort.Direction.ASC, "createdAt");
         if ("desc".equalsIgnoreCase(sort)) {
             sortOption = Sort.by(Sort.Direction.DESC, "createdAt");
         }
 
         Pageable pageable = PageRequest.of(page, size, sortOption);
-        Page<Room> roomPage = roomRepository.findAll(
-                RoomSpecification.filterRooms(q, minPrice, maxPrice, minArea,type,status),
-                pageable
-        );
 
-        List<RoomResponse> roomResponses = roomMapper.toResponse(roomPage.getContent());
+        // ===============================
+        // 2. Lấy user hiện tại (nếu login)
+        // ===============================
         User user = null;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
-            user = null;
-        } else {
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             String email = auth.getName();
             user = userRepository.findByEmail(email).orElse(null);
         }
-        if(user!= null && user.getRole().getName()==(RoleEnum.OWNER)){
-            List<RoomResponse> filteredRooms = new ArrayList<>();
-            for (RoomResponse roomResponse : roomResponses) {
-                if(roomResponse.getOwnerId() == user.getId()){
-                    filteredRooms.add(roomResponse);
-                }
-            }
-            roomResponses = filteredRooms;
+
+        // ===============================
+        // 3. Nếu user là OWNER -> lọc theo ownerId
+        // ===============================
+        Long ownerId = null;
+        if (user != null && RoleEnum.OWNER.equals(user.getRole().getName())) {
+            ownerId = user.getId();
         }
+
+        // ===============================
+        // 4. Build Specification đầy đủ
+        // ===============================
+        Specification<Room> spec = RoomSpecification.filterRooms(
+                q, minPrice, maxPrice, minArea, type, status, ownerId
+        );
+
+        // ===============================
+        // 5. Query DB (đã bao gồm phân trang & lọc owner)
+        // ===============================
+        Page<Room> roomPage = roomRepository.findAll(spec, pageable);
+
+        // Map sang DTO
+        List<RoomResponse> roomResponses = roomMapper.toResponse(roomPage.getContent());
+
+        // ===============================
+        // 6. Trả kết quả cuối cùng
+        // ===============================
         return PageResponse.<RoomResponse>builder()
                 .code(200)
-                .totalPages(roomPage.getTotalPages())
-                .totalElements(roomPage.getTotalElements())
+                .message("Lấy danh sách phòng thành công")
                 .pageNumber(roomPage.getNumber())
                 .pageSize(roomPage.getSize())
-                .message("Lấy danh sách phòng thành công")
+                .totalPages(roomPage.getTotalPages())
+                .totalElements(roomPage.getTotalElements())
                 .data(roomResponses)
                 .build();
     }
+
 }

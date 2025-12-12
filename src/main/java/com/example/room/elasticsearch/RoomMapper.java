@@ -17,6 +17,7 @@ public class RoomMapper {
                 .facilities(room.getFacilities())
                 .status(room.getStatus() != null ? room.getStatus().name() : null)
                 .ownerName(room.getOwner() != null ? room.getOwner().getFullName() : null)
+                .ownerId(room.getOwner() != null ? room.getOwner().getId(): null)
                 .deleted(Boolean.TRUE.equals(room.getDeleted()))
                 .build();
     }

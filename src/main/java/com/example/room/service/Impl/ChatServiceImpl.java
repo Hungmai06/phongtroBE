@@ -10,6 +10,7 @@ import com.example.room.dto.response.MessageResponse;
 import com.example.room.mapper.ChatMapper;
 import com.example.room.model.Conversation;
 import com.example.room.model.Message;
+import com.example.room.model.User;
 import com.example.room.repository.ConversationRepository;
 import com.example.room.repository.MessageRepository;
 import com.example.room.repository.UserRepository;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +54,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public BaseResponse<MessageResponse> sendMessage(SendMessageRequest request) {
         Conversation conversation = conversationRepository.findByUser1IdAndUser2Id(request.getSenderId(), request.getReceiverId())
                 .or(() -> conversationRepository.findByUser2IdAndUser1Id(request.getSenderId(), request.getReceiverId()))
@@ -96,8 +99,9 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public BaseResponse<List<ConversationResponse>> getUserConversations(Long userId) {
-        List<Conversation> conversations = conversationRepository.findAllByUser(userId);
+    public BaseResponse<List<ConversationResponse>> getUserConversations() {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<Conversation> conversations = conversationRepository.findAllByUser(user.getId());
         return BaseResponse.<List<ConversationResponse>>builder()
                 .code(200)
                 .message("Lấy danh sách cuộc trò chuyện thành công")

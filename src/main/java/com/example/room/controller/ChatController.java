@@ -46,10 +46,8 @@ public class ChatController {
 
     @GetMapping("/conversations")
     @Operation(summary = "Lấy danh sách conversation của user", description = "Trả về danh sách conversation mà user tham gia")
-    public BaseResponse<List<ConversationResponse>> getUserConversations(
-            @Parameter(description = "ID của user", required = true)
-            @RequestParam Long userId) {
-        return chatService.getUserConversations(userId);
+    public BaseResponse<List<ConversationResponse>> getUserConversations() {
+        return chatService.getUserConversations();
     }
 
     @PostMapping("/seen")

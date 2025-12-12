@@ -13,8 +13,8 @@ public class BankAccountUtils {
             String encodedAddInfo = URLEncoder.encode(addInfo, StandardCharsets.UTF_8);
 
             String url = String.format(
-                    "https://img.vietqr.io/image/%s-%s-compact2.png?amount=%d&addInfo=%s&accountName=%s",
-                    bankCode, accountNo, amount, encodedAddInfo, encodedAccountName
+                    "https://img.vietqr.io/image/%s-%s-compact2.png?amount=%s&addInfo=%s&accountName=%s",
+                    bankCode, accountNo, amount.toPlainString(), encodedAddInfo, encodedAccountName
             );
 
             return url;

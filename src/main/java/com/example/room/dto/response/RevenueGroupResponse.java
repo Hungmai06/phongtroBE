@@ -12,6 +12,5 @@ import java.math.BigDecimal;
 public class RevenueGroupResponse {
     private String period; // e.g. 2025-11
     private BigDecimal totalAmount;
-    private long paymentsCount;
 }
 

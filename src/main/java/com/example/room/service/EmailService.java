@@ -11,4 +11,5 @@ public interface EmailService {
     void sendContractInfoWithAttachment(ContractEmailRequest request, String email, String attachmentPath) throws MessagingException;
     void sendEmailWithAttachment(String to, String subject, String body, String attachmentPath) throws MessagingException;
     void sendPaymentMonthly(PaymentMonthlyRequest request, String email) throws MessagingException;
+    void sendHelp(String fullName,String email, String description) throws MessagingException;
 }

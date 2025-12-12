@@ -10,7 +10,12 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RevenueSummaryResponse {
-    private BigDecimal totalAmount;
-    private long paymentsCount;
+    private BigDecimal totalRevenue;
+
+    private String fromPeriod;
+
+    private String toPeriod;
+
+    private Integer months;
 }
 

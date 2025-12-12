@@ -4,18 +4,24 @@ import com.example.room.dto.response.RevenueGroupResponse;
 import com.example.room.dto.response.RevenueSummaryResponse;
 import com.example.room.exception.ForBiddenException;
 import com.example.room.model.User;
+import com.example.room.repository.PaymentRepository;
 import com.example.room.service.ReportService;
 import com.example.room.service.SecurityService;
+import com.sun.security.auth.UserPrincipal;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,130 +34,97 @@ public class ReportServiceImpl implements ReportService {
     private EntityManager entityManager;
 
     private final SecurityService securityService;
+    private final PaymentRepository paymentRepository;
 
     @Override
-    public RevenueSummaryResponse getRevenueSummary(LocalDateTime start, LocalDateTime end, Long ownerId, Long roomId) {
-        // Quyền truy cập:
-        User currentUser = securityService.getCurrentUser();
-        boolean isAdmin = currentUser.getRole() != null && currentUser.getRole().getName() != null &&
-                currentUser.getRole().getName().name().equals("ADMIN");
+    public List<RevenueGroupResponse> getMonthlyRevenue(
+            String fromPeriod,
+            String toPeriod,
+            Long roomId
+    ) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) auth.getPrincipal();   // 👈 entity User
+
+        boolean isOwner = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_OWNER"));
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        Long effectiveOwnerId = null;
+
+        if (isOwner) {
+            effectiveOwnerId = user.getId(); // lấy từ quan hệ User → Owner
+        }
 
         if (isAdmin) {
-            // Admin chỉ được xem doanh thu của một chủ trọ (ownerId phải có), không được xem detail theo room
-            if (ownerId == null) {
-                throw new ForBiddenException("Admin phải cung cấp ownerId để xem báo cáo");
-            }
-            if (roomId != null) {
-                throw new ForBiddenException("Admin không được xem báo cáo chi tiết theo phòng");
-            }
-        } else {
-            // Owner: chỉ được xem báo cáo của chính mình. Nếu ownerId được truyền và khác current => forbidden
-            Long currentOwnerId = currentUser.getId();
-            if (ownerId != null && !ownerId.equals(currentOwnerId)) {
-                throw new ForBiddenException("Owner không được xem báo cáo của chủ trọ khác");
-            }
-            ownerId = currentOwnerId; // nếu owner gọi mà ko truyền ownerId, gán mặc định
-
-            // Nếu owner muốn xem theo phòng, kiểm tra quyền sở hữu phòng
-            if (roomId != null) {
-                if (!securityService.isRoomOwner(roomId)) {
-                    throw new ForBiddenException("Owner không có quyền xem báo cáo của phòng này");
-                }
-            }
+            effectiveOwnerId = null; // admin xem tất cả
         }
 
-        if (start == null) start = LocalDateTime.of(2025, 1, 1, 0, 0);
-        if (end == null) end = LocalDateTime.now();
-
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT COALESCE(SUM(p.amount),0) AS total, COUNT(p.id) AS cnt ")
-           .append("FROM payments p ")
-           .append("JOIN bookings b ON p.booking_id = b.id ")
-           .append("JOIN rooms r ON b.room_id = r.id ")
-           .append("WHERE p.payment_date BETWEEN :start AND :end ")
-                .append("AND p.payment_status = :paymentStatus ");
-
-        if (ownerId != null) sql.append(" AND r.owner_id = :ownerId ");
-        if (roomId != null) sql.append(" AND r.id = :roomId ");
-
-        Query query = entityManager.createNativeQuery(sql.toString());
-        query.setParameter("start", Timestamp.valueOf(start));
-        query.setParameter("end", Timestamp.valueOf(end));
-        if (ownerId != null) query.setParameter("ownerId", ownerId);
-        if (roomId != null) query.setParameter("roomId", roomId);
-
-        Object[] row = (Object[]) query.getSingleResult();
-        BigDecimal total = BigDecimal.ZERO;
-        long cnt = 0L;
-        if (row != null) {
-            Object totalObj = row[0];
-            Object cntObj = row[1];
-            if (totalObj != null) total = new BigDecimal(totalObj.toString());
-            if (cntObj != null) cnt = ((Number) cntObj).longValue();
+        if (toPeriod == null) {
+            toPeriod = YearMonth.now().toString();
+        }
+        if (fromPeriod == null) {
+            fromPeriod = YearMonth.parse(toPeriod).minusMonths(5).toString();
         }
 
-        return new RevenueSummaryResponse(total, cnt);
+        return paymentRepository.getMonthlyRevenue(fromPeriod, toPeriod, effectiveOwnerId, roomId);
     }
-
     @Override
-    public List<RevenueGroupResponse> getMonthlyRevenue(LocalDateTime start, LocalDateTime end, Long ownerId, Long roomId) {
-        // Quyền truy cập tương tự
-        User currentUser = securityService.getCurrentUser();
-        boolean isAdmin = currentUser.getRole() != null && currentUser.getRole().getName() != null &&
-                currentUser.getRole().getName().name().equals("ADMIN");
+    public RevenueSummaryResponse getRevenueSummaryByRecentMonths(Integer months,
+                                                                  Long roomId) {
 
+        // 1️⃣ Chuẩn hóa months: chỉ cho 3,6,9,12 – default = 6
+        if (months == null) {
+            months = 6;
+        }
+        if (months != 3 && months != 6 && months != 9 && months != 12) {
+            months = 6;
+        }
+
+        // 2️⃣ Lấy user đang đăng nhập
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) auth.getPrincipal(); // nếu bạn dùng entity User trong Security
+
+        boolean isOwner = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_OWNER"));
+
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        Long effectiveOwnerId = null;
+
+        // OWNER → chỉ xem của mình
+        if (isOwner) {
+            // giả sử User có getOwner().getId()
+            effectiveOwnerId = user.getId();
+        }
+
+        // ADMIN → xem full
         if (isAdmin) {
-            if (ownerId == null) {
-                throw new ForBiddenException("Admin phải cung cấp ownerId để xem báo cáo");
-            }
-            if (roomId != null) {
-                throw new ForBiddenException("Admin không được xem báo cáo chi tiết theo phòng");
-            }
-        } else {
-            Long currentOwnerId = currentUser.getId();
-            if (ownerId != null && !ownerId.equals(currentOwnerId)) {
-                throw new ForBiddenException("Owner không được xem báo cáo của chủ trọ khác");
-            }
-            ownerId = currentOwnerId;
-            if (roomId != null && !securityService.isRoomOwner(roomId)) {
-                throw new ForBiddenException("Owner không có quyền xem báo cáo của phòng này");
-            }
+            effectiveOwnerId = null;
         }
 
-        if (start == null) start = LocalDateTime.of(2025, 1, 1, 0, 0);
-        if (end == null) end = LocalDateTime.now();
+        // 3️⃣ Tính fromPeriod & toPeriod theo months gần nhất
+        YearMonth to = YearMonth.now();               // Tháng hiện tại, ví dụ 2025-12
+        YearMonth from = to.minusMonths(months - 1);  // Ví dụ 6 tháng: 2025-07
 
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT to_char(date_trunc('month', p.payment_date), 'YYYY-MM') AS period, ")
-           .append("COALESCE(SUM(p.amount),0) AS total, COUNT(p.id) AS cnt ")
-           .append("FROM payments p ")
-           .append("JOIN bookings b ON p.booking_id = b.id ")
-           .append("JOIN rooms r ON b.room_id = r.id ")
-           .append("WHERE p.payment_date BETWEEN :start AND :end ")
-                .append("AND p.payment_status = :paymentStatus ");;
+        String fromPeriod = from.toString();          // "YYYY-MM"
+        String toPeriod   = to.toString();            // "YYYY-MM"
 
-        if (ownerId != null) sql.append(" AND r.owner_id = :ownerId ");
-        if (roomId != null) sql.append(" AND r.id = :roomId ");
+        // 4️⃣ Gọi repo lấy tổng doanh thu
+        BigDecimal total = paymentRepository.getTotalRevenueByPeriod(
+                fromPeriod,
+                toPeriod,
+                effectiveOwnerId,
+                roomId
+        );
 
-        sql.append(" GROUP BY date_trunc('month', p.payment_date) ")
-           .append(" ORDER BY date_trunc('month', p.payment_date) DESC");
-
-        Query query = entityManager.createNativeQuery(sql.toString());
-        query.setParameter("start", Timestamp.valueOf(start));
-        query.setParameter("end", Timestamp.valueOf(end));
-        if (ownerId != null) query.setParameter("ownerId", ownerId);
-        if (roomId != null) query.setParameter("roomId", roomId);
-
-        @SuppressWarnings("unchecked")
-        List<Object[]> results = query.getResultList();
-        List<RevenueGroupResponse> output = new ArrayList<>();
-        for (Object[] r : results) {
-            String period = r[0] != null ? r[0].toString() : null;
-            BigDecimal total = r[1] != null ? new BigDecimal(r[1].toString()) : BigDecimal.ZERO;
-            long cnt = r[2] != null ? ((Number) r[2]).longValue() : 0L;
-            output.add(new RevenueGroupResponse(period, total, cnt));
-        }
-
-        return output;
+        // 5️⃣ Trả về DTO summary
+        return new RevenueSummaryResponse(
+                total != null ? total : BigDecimal.ZERO,
+                fromPeriod,
+                toPeriod,
+                months
+        );
     }
 }

@@ -15,7 +15,7 @@ public interface ChatService {
 
     PageResponse<MessageResponse> getMessages(Long conversationId, int page, int size);
 
-    BaseResponse<List<ConversationResponse>> getUserConversations(Long userId);
+    BaseResponse<List<ConversationResponse>> getUserConversations();
 
     BaseResponse<String> markMessagesAsSeen(MarkSeenRequest request);
 }

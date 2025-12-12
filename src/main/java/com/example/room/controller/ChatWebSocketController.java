@@ -17,10 +17,15 @@ public class ChatWebSocketController {
     @MessageMapping("/chat.send")
     public void send(SendMessageRequest payload) {
         var response = chatService.sendMessage(payload);
-        messagingTemplate.convertAndSendToUser(
-                payload.getReceiverId().toString(),
-                "/queue/messages",
+
+        Long receiverId = payload.getReceiverId();
+
+        // Gửi đến topic riêng cho user nhận
+        messagingTemplate.convertAndSend(
+                "/topic/user." + receiverId,
                 response.getData()
         );
+
+        System.out.println("Sent to /topic/user." + receiverId);
     }
 }

@@ -25,41 +25,46 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    @GetMapping("/revenue/summary")
+    @GetMapping("/revenue/summary/recent")
     @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
-    @Operation(summary = "Tổng quan doanh thu trong khoảng thời gian")
-    public BaseResponse<RevenueSummaryResponse> getRevenueSummary(
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
-            @RequestParam(required = false) Long ownerId,
-            @RequestParam(required = false) Long roomId
+    @Operation(summary = "Tổng doanh thu theo N tháng gần nhất (3/6/9/12)")
+    public BaseResponse<RevenueSummaryResponse> getRevenueSummaryRecent(
+            @RequestParam(required = false) Integer months,  // 3, 6, 9, 12
+            @RequestParam(required = false) Long roomId      // nếu muốn lọc thêm theo phòng
     ) {
-        RevenueSummaryResponse data = reportService.getRevenueSummary(start, end, ownerId, roomId);
+        RevenueSummaryResponse data =
+                reportService.getRevenueSummaryByRecentMonths(months, roomId);
+
         return BaseResponse.<RevenueSummaryResponse>builder()
                 .code(200)
-                .data(data)
                 .message("OK")
+                .data(data)
                 .build();
     }
 
     @GetMapping("/revenue/monthly")
     @PreAuthorize("hasAnyRole('ADMIN','OWNER')")
-    @Operation(summary = "Doanh thu theo tháng (group by month) trong khoảng thời gian")
+    @Operation(summary = "Doanh thu theo tháng (group by paymentPeriod)")
     public BaseResponse<List<RevenueGroupResponse>> getMonthlyRevenue(
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
-            @RequestParam(required = false) Long ownerId,
-            @RequestParam(required = false) Long roomId
+            @RequestParam(required = false) String fromPeriod,   // "YYYY-MM", ví dụ "2024-07"
+            @RequestParam(required = false) String toPeriod,     // "YYYY-MM", ví dụ "2024-12"
+            @RequestParam(required = false) Long roomId          // lọc thêm theo phòng nếu cần
     ) {
-        List<RevenueGroupResponse> data = reportService.getMonthlyRevenue(start, end, ownerId, roomId);
+        /*
+          - Không nhận ownerId từ FE.
+          - Service sẽ:
+              + Lấy user hiện tại từ SecurityContext
+              + Nếu ROLE_OWNER  -> chỉ lấy dữ liệu của owner đó
+              + Nếu ROLE_ADMIN  -> lấy toàn bộ (hoặc filter roomId nếu có)
+              + Nếu from/to null -> tự tính 6 tháng gần nhất.
+         */
+        List<RevenueGroupResponse> data =
+                reportService.getMonthlyRevenue(fromPeriod, toPeriod, roomId);
+
         return BaseResponse.<List<RevenueGroupResponse>>builder()
                 .code(200)
-                .data(data)
                 .message("OK")
+                .data(data)
                 .build();
     }
 }

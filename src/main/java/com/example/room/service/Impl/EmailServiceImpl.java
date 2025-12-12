@@ -183,4 +183,23 @@ public class EmailServiceImpl implements EmailService {
 
         mailSender.send(message);
     }
+
+    @Override
+    public void sendHelp(String fullName, String email, String description) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        Context context = new Context();
+        context.setVariable("fullName", fullName);
+        context.setVariable("description", description);
+
+        String htmlContent = templateEngine.process("help", context);
+
+        helper.setFrom(fromEmail);
+        helper.setTo(email);
+        helper.setSubject("Thông báo hỗ trợ khách hàng");
+        helper.setText(htmlContent, true);
+
+        mailSender.send(message);
+    }
 }

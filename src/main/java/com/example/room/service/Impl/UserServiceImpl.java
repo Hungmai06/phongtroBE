@@ -72,10 +72,6 @@ public class UserServiceImpl implements UserService {
         );
 
         if(request.getEmail()!= null && !request.getEmail().isEmpty()){
-            Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
-            if(optionalUser.isPresent()){
-                throw new InvalidDataException("Email đã tồn tại");
-            }
             user.setEmail(request.getEmail());
         }
         if(request.getPhone()!= null && !request.getPhone().isEmpty()) user.setPhone(request.getPhone());

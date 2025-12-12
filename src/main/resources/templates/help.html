@@ -1,0 +1,108 @@
+
+
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Cảm ơn bạn đã liên hệ</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f3f6fb;
+            margin: 0;
+            padding: 30px 10px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+            background: linear-gradient(135deg, #16a085, #2ecc71);
+            color: #fff;
+            padding: 20px 24px;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .content {
+            padding: 28px 24px;
+            line-height: 1.6;
+            color: #374151;
+        }
+        .info-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+        }
+        .button {
+            display: inline-block;
+            text-decoration: none;
+            background: linear-gradient(90deg, #16a085, #2ecc71);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 6px rgba(22, 160, 133, 0.3);
+            transition: all 0.2s ease-in-out;
+        }
+        .button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .footer {
+            background: #f9fafb;
+            padding: 16px;
+            font-size: 13px;
+            color: #6b7280;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">CẢM ƠN BẠN ĐÃ LIÊN HỆ</div>
+
+    <div class="content">
+        <p>Xin chào <b th:text="${fullName}">Nguyễn Văn A</b>,</p>
+
+        <p style="font-size:16px; font-weight:700; margin-top:8px;">
+            Chúng tôi đã nhận được yêu cầu của bạn
+        </p>
+
+        <!-- Mô tả động mà bạn truyền vào -->
+        <p th:text="${description}" style="color:#4b5563; margin-top:12px;">
+            Nội dung bạn gửi sẽ được bộ phận hỗ trợ xem xét và phản hồi trong thời gian sớm nhất.
+        </p>
+
+        <div class="info-box">
+            <p style="margin:0;"><b>Thông tin liên hệ:</b></p>
+            <p>Email: admin@gmail.com</p>
+        </div>
+
+        <p style="text-align:center;">
+            <a href="https://your-domain.com" class="button">Quay lại trang chủ</a>
+        </p>
+
+        <p style="font-size: 15px; color: #4b5563; margin-top: 24px;">
+            Chúng tôi sẽ phản hồi qua email trong thời gian sớm nhất.
+            Nếu bạn cần hỗ trợ khẩn cấp, vui lòng liên hệ:
+            <a href="mailto:support@your-domain.com">support@your-domain.com</a>
+        </p>
+    </div>
+
+    <div class="footer">
+        © <span th:text="${year}">2025</span> Hệ thống Quản lý Nhà trọ · Xin chân thành cảm ơn.
+    </div>
+</div>
+</body>
+</html>

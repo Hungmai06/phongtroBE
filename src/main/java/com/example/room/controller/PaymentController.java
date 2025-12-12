@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -33,7 +34,7 @@ public class PaymentController{
     private final ContractRepository contractRepository;
 
     @PostMapping("")
-    @PreAuthorize("hasRole('OWNER') and @securityService.canAccessBooking(#request.bookingId)")
+    @PreAuthorize("hasRole('OWNER')")
     @Operation(summary = "Tạo một khoản thanh toán mới (Owner)")
     public BaseResponse<PaymentResponse> createPayment(
             @Valid @RequestBody PaymentCreateRequest request) throws MessagingException {
@@ -57,17 +58,31 @@ public class PaymentController{
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER') and @securityService.canAccessPayment(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
     @Operation(summary = "Lấy chi tiết một khoản thanh toán")
     public BaseResponse<PaymentResponse> getPaymentById(@PathVariable Long id) {
        return  paymentService.getPaymentById(id);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER') and @securityService.canAccessPayment(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
     @Operation(summary = "Cập nhật trạng thái thanh toán (Owner xác nhận đã nhận tiền)")
     public BaseResponse<PaymentResponse> updatePaymentStatus(@PathVariable Long id, @Valid @RequestBody PaymentUpdateRequest request) {
         return paymentService.updatePaymentStatus(id, request);
     }
 
+    @GetMapping("/room/{roomId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'RENTER')")
+    @Operation(summary = "Lấy khoản thanh toán theo Room ID")
+    public BaseResponse<PaymentResponse> getPaymentByRoomId(@PathVariable Long roomId) {
+        return paymentService.getPaymentByRoomId(roomId);
+    }
+
+    @GetMapping("/revenue/owner/month")
+    public BaseResponse<BigDecimal> ownerRevenueInMonth(
+            @RequestParam Long ownerId,
+            @RequestParam String period   // "YYYY-MM"
+    ) {
+        return paymentService.ownerRevenueInMonth(ownerId, period);
+    }
 }

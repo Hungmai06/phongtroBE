@@ -5,7 +5,9 @@ import com.example.room.dto.PageResponse;
 import com.example.room.dto.request.PaymentCreateRequest;
 import com.example.room.dto.request.PaymentMonthlyRequest;
 import com.example.room.dto.request.PaymentUpdateRequest;
+import com.example.room.dto.response.OwnerRevenuePeriodDto;
 import com.example.room.dto.response.PaymentResponse;
+import com.example.room.dto.response.RevenueByOwnerResponse;
 import com.example.room.exception.InvalidDataException;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.PaymentMapper;
@@ -34,12 +36,10 @@ import org.springframework.security.access.AccessDeniedException;
 
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -57,19 +57,33 @@ public class PaymentServiceImpl implements PaymentService {
     private final RoomRepository roomRepository;
     private final RoomServiceUsageRepository roomServiceUsageRepository;
     private final EmailService emailService;
-    private final BankAccountRepository bankAccountRepository;
     private final BankAccountUtils bankAccountUtils;
 
     @Override
     @Transactional
     public BaseResponse<PaymentResponse> createPayment(PaymentCreateRequest request) throws MessagingException {
+        Room room = null;
 
+        if (request.getRoomId() != null) {
+            room = roomRepository.findById(request.getRoomId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng với ID: " + request.getRoomId()));
+            List<Payment> payments = paymentRepository.findAll();
+            List<PaymentResponse> paymentResponses = payments.stream().map(paymentMapper::toResponse).collect(Collectors.toList());
+            for (PaymentResponse paymentResponse : paymentResponses) {
+                if (paymentResponse.getRoomId() == room.getId() && paymentResponse.getPaymentType() == PaymentType.MONTHLY
+                        && paymentResponse.getPaymentStatus() == PaymentStatus.PENDING && paymentResponse.getPaymentPeriod().equals(request.getPaymentPeriod())) {
+                    throw new InvalidDataException("Đã tồn tại một khoản thanh toán tháng chưa được xử lý cho phòng này.");
+                }
+            }
+        }
         Payment payment = Payment.builder()
                 .paymentMethod(request.getPaymentMethod())
                 .paymentPeriod(request.getPaymentPeriod())
                 .paymentType(request.getPaymentType())
                 .paymentStatus(PaymentStatus.PENDING)
                 .build();
+        PaymentMonthlyRequest monthlyRequest = null;
+        String recipientEmail = null;
 
         switch (request.getPaymentType()) {
             case DEPOSIT:
@@ -86,70 +100,108 @@ public class PaymentServiceImpl implements PaymentService {
                     payment.setAmount(booking.getRoom().getDeposit());
                 }
                 break;
-            case MONTHLY:
-                if (request.getBookingId() != null) {
-                    Contract contract = contractRepository.findByBookingId(request.getBookingId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Hợp đồng cho Booking ID: " + request.getBookingId()));
-                    Booking booking = contract.getBooking();
-                    if(booking == null){
-                        throw new InvalidDataException("Hợp đồng không liên kết với booking nào.");
-                    }
-                    Room room = booking.getRoom();
-                    if(room == null){
-                        throw new InvalidDataException("Booking không liên kết với phòng nào.");
-                    }
-                    List<RoomServiceUsage> serviceUsages = roomServiceUsageRepository.findByRoomIdAndMonth(room.getId(), request.getPaymentPeriod());
+            case MONTHLY: {
+                Contract contract;
+                Booking booking = null;
 
-                    BigDecimal servicesTotal = BigDecimal.ZERO;
-                    for (RoomServiceUsage usage : serviceUsages) {
-                        servicesTotal = servicesTotal.add(usage.getTotalPrice());
-                    }
-                    BigDecimal baseRent = room.getPrice(); 
-                    BigDecimal grandTotal = baseRent.add(servicesTotal);
-                    payment.setAmount(grandTotal);
-                    String description = "Thanh toán tiền phòng " + room.getName() + " tháng " + request.getPaymentPeriod()+" "+UUID.randomUUID().toString().replace("-","").substring(0,6);
-                    payment.setDescription(description);
-                    payment.setContract(contract);
+                    contract = contractRepository
+                            .findActiveContractByRoomId(room.getId(), ContractStatus.ACTIVE, LocalDateTime.now())
+                            .orElse(null);
 
-                    List<PaymentMonthlyRequest.ServiceItem> serviceItems = new ArrayList<>();
-                    for(RoomServiceUsage usage : serviceUsages){
-                        PaymentMonthlyRequest.ServiceItem item = PaymentMonthlyRequest.ServiceItem.builder()
-                                .quantityUsed(usage.getQuantityUsed())
-                                .quantityOld(usage.getQuantityOld())
-                                .quantityNew(usage.getQuantityNew())
-                                .name(usage.getName())
-                                .pricePerUnit(usage.getPricePerUnit())
-                                .totalPrice(usage.getTotalPrice())
-                                .build();
-                        serviceItems.add(item);
+                    if (contract != null) {
+                        booking = contract.getBooking();
+                        if (booking != null) {
+                            payment.setBooking(booking);
+                        }
+                        payment.setContract(contract);
                     }
-                    BankAccount bankAccount = room.getOwner().getBankAccount();
-                    PaymentMonthlyRequest monthlyRequest = PaymentMonthlyRequest.builder()
-                            .paymentId(payment.getId())
-                            .paymentPeriod(payment.getPaymentPeriod())
-                            .baseRent(room.getPrice())
-                            .services(serviceItems)
-                            .roomAddress(room.getAddress())
-                            .roomName(room.getName())
-                            .ownerEmail(room.getOwner().getEmail())
-                            .ownerName(room.getOwner().getFullName())
-                            .ownerPhone(room.getOwner().getPhone())
-                            .servicesTotal(servicesTotal)
-                            .grandTotal(grandTotal)
-                            .vietQR(bankAccountUtils.generateVietQR(bankAccount.getBankCode(), bankAccount.getAccountNumber(),
-                                    bankAccount.getAccountName(),
-                                    grandTotal,
-                                    description))
-                            .build();
-                    emailService.sendPaymentMonthly(monthlyRequest,booking.getUser().getEmail());
+
+                List<RoomServiceUsage> serviceUsages =
+                        roomServiceUsageRepository.findByRoomIdAndMonth(room.getId(), request.getPaymentPeriod());
+
+                BigDecimal servicesTotal = BigDecimal.ZERO;
+                for (RoomServiceUsage usage : serviceUsages) {
+                    servicesTotal = servicesTotal.add(usage.getTotalPrice());
                 }
+
+                BigDecimal baseRent = room.getPrice();
+                BigDecimal grandTotal = baseRent.add(servicesTotal);
+                payment.setAmount(grandTotal);
+
+                String description = "Thanh toán tiền phòng " + room.getName()
+                        + " tháng " + request.getPaymentPeriod() + " "
+                        + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+                payment.setDescription(description);
+
+                // Build service items
+                List<PaymentMonthlyRequest.ServiceItem> serviceItems = new ArrayList<>();
+                for (RoomServiceUsage usage : serviceUsages) {
+                    PaymentMonthlyRequest.ServiceItem item = PaymentMonthlyRequest.ServiceItem.builder()
+                            .quantityUsed(usage.getQuantityUsed())
+                            .quantityOld(usage.getQuantityOld())
+                            .quantityNew(usage.getQuantityNew())
+                            .name(usage.getName())
+                            .pricePerUnit(usage.getPricePerUnit())
+                            .totalPrice(usage.getTotalPrice())
+                            .build();
+                    serviceItems.add(item);
+                }
+
+                if (room.getOwner() == null) {
+                    throw new InvalidDataException("Phòng không có chủ sở hữu hợp lệ.");
+                }
+
+                BankAccount bankAccount = room.getOwner().getBankAccount();
+                if (bankAccount == null) {
+                    throw new InvalidDataException("Chủ phòng chưa cấu hình tài khoản ngân hàng.");
+                }
+
+                if (booking != null && booking.getUser() != null && booking.getUser().getEmail() != null) {
+                    recipientEmail = booking.getUser().getEmail();
+                } else if (room.getOwner().getEmail() != null) {
+                    recipientEmail = room.getOwner().getEmail();
+                } else {
+                    throw new InvalidDataException("Không tìm thấy email người nhận để gửi hóa đơn.");
+                }
+
+                // TẠM thời lưu lại data cần cho email, chưa set paymentId ở đây
+                monthlyRequest = PaymentMonthlyRequest.builder()
+                        .paymentPeriod(request.getPaymentPeriod())
+                        .baseRent(room.getPrice())
+                        .services(serviceItems)
+                        .roomAddress(room.getAddress())
+                        .roomName(room.getName())
+                        .ownerEmail(room.getOwner().getEmail())
+                        .ownerName(room.getOwner().getFullName())
+                        .ownerPhone(room.getOwner().getPhone())
+                        .servicesTotal(servicesTotal)
+                        .grandTotal(grandTotal)
+                        .vietQR(bankAccountUtils.generateVietQR(
+                                bankAccount.getBankCode(),
+                                bankAccount.getAccountNumber(),
+                                bankAccount.getAccountName(),
+                                grandTotal,
+                                description))
+                        .build();
+
                 break;
-            case OTHER:
+            }
+
+            case OTHER: {
                 payment.setAmount(request.getAmount());
                 break;
+            }
         }
 
+        // Save duy nhất 1 lần
         Payment savedPayment = paymentRepository.save(payment);
+
+        // Sau khi có id rồi thì update cho MONTHLY request & gửi mail
+        if (request.getPaymentType() == PaymentType.MONTHLY && monthlyRequest != null) {
+            monthlyRequest.setPaymentId(savedPayment.getId());
+            monthlyRequest.setPaymentPeriod(savedPayment.getPaymentPeriod());
+            emailService.sendPaymentMonthly(monthlyRequest, recipientEmail);
+        }
 
         return BaseResponse.<PaymentResponse>builder()
                 .data(paymentMapper.toResponse(savedPayment))
@@ -186,18 +238,23 @@ public class PaymentServiceImpl implements PaymentService {
     private void handlePaidPayment(Payment payment) {
         Booking booking = payment.getBooking();
 
-        boolean contractExists = booking.getContracts() != null && !booking.getContracts().isEmpty();
-        if (!contractExists && payment.getPaymentType() == PaymentType.DEPOSIT) {
-            contractService.createContractPayment(payment.getId());
+        if (booking != null) {
+            boolean contractExists = booking.getContracts() != null && !booking.getContracts().isEmpty();
+            if (!contractExists && payment.getPaymentType() == PaymentType.DEPOSIT) {
+                contractService.createContractPayment(payment.getId());
+            }
+        } else {
+            // No booking associated (e.g. monthly payment created from roomId) — skip contract creation.
+            log.debug("Paid payment id {} has no booking associated; skipping contract creation.", payment.getId());
         }
 
-        try {
-            invoiceService.createInvoiceRecord(payment.getId());
-        } catch (Exception e) {
-            log.error(" Lỗi khi tạo hóa đơn cho payment ID {}: {}", payment.getId(), e.getMessage());
-        }
+         try {
+             invoiceService.createInvoiceRecord(payment.getId());
+         } catch (Exception e) {
+             log.error(" Lỗi khi tạo hóa đơn cho payment ID {}: {}", payment.getId(), e.getMessage());
+         }
 
-    }
+     }
 
     @Override
     public PageResponse<PaymentResponse> getAllPayments(int page, int size, Long bookingId, PaymentType paymentType, PaymentMethod paymentMethod, PaymentStatus paymentStatus, LocalDateTime paymentDate, LocalDate paymentPeriod) {
@@ -253,6 +310,38 @@ public class PaymentServiceImpl implements PaymentService {
                 .message("Lấy thông tin thanh toán thành công")
                 .code(200)
                 .data(paymentMapper.toResponse(payment))
+                .build();
+    }
+
+    @Override
+    public BaseResponse<PaymentResponse> getPaymentByRoomId(Long roomId) {
+        List<Payment> payments = paymentRepository.findAll();
+        List<PaymentResponse> paymentResponses = payments.stream().map(paymentMapper::toResponse).collect(Collectors.toList());
+        for(PaymentResponse paymentResponse : paymentResponses) {
+            if(paymentResponse.getRoomId()==roomId && paymentResponse.getPaymentType()==PaymentType.MONTHLY){
+                return BaseResponse.<PaymentResponse>builder()
+                        .message("Lấy thông tin thanh toán thành công")
+                        .code(200)
+                        .data(paymentResponse)
+                        .build();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public BaseResponse<BigDecimal> ownerRevenueInMonth(Long ownerId, String period) {
+
+        if (ownerId == null || period == null) {
+            throw new InvalidDataException("ownerId và period (YYYY-MM) không được null.");
+        }
+
+        BigDecimal revenue = paymentRepository.getOwnerRevenueInMonth(PaymentStatus.PAID,ownerId, period);
+
+        return BaseResponse.<BigDecimal>builder()
+                .code(200)
+                .message("OK")
+                .data(revenue)
                 .build();
     }
 
