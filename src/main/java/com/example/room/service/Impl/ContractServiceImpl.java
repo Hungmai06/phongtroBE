@@ -2,6 +2,7 @@ package com.example.room.service.Impl;
 
 import com.example.room.dto.BaseResponse;
 import com.example.room.dto.PageResponse;
+import com.example.room.dto.events.ContractMailEvent;
 import com.example.room.dto.request.ContractUpdateRequest;
 import com.example.room.dto.request.ContractEmailRequest;
 import com.example.room.dto.response.ContractResponse;
@@ -25,6 +26,7 @@ import jakarta.transaction.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -55,7 +57,7 @@ public class ContractServiceImpl implements ContractService {
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
     private final PaymentRepository paymentRepository;
-
+   private final ApplicationEventPublisher publisher;
     @Override
     public PageResponse<ContractEmailRequest> getAllContracts(Integer page, Integer size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -213,7 +215,7 @@ public class ContractServiceImpl implements ContractService {
     }
     @Override
     @Transactional
-    public BaseResponse<ContractEmailRequest> createContractPayment(Long paymentId) {
+    public BaseResponse<ContractEmailRequest> createContractPayment(Long paymentId, LocalDate startDate, LocalDate endDate) {
         Payment payment = paymentRepository.findById(paymentId).orElseThrow(
                 ()-> new ResourceNotFoundException("Payment not found with id: " + paymentId)
         );
@@ -221,12 +223,11 @@ public class ContractServiceImpl implements ContractService {
         Room room = booking.getRoom();
         User renter = booking.getUser();
         User owner = room.getOwner();
-        LocalDateTime contractStartDate = (booking.getStartDate() != null) ? booking.getStartDate() : LocalDateTime.now();
         Contract contract = Contract.builder()
                 .booking(booking)
-                .startDate(contractStartDate)
-                .endDate(booking.getEndDate())
                 .status(ContractStatus.ACTIVE)
+                .startDate(startDate)
+                .endDate(endDate)
                 .build();
 
         // Save contract first so ID is generated
@@ -272,19 +273,21 @@ public class ContractServiceImpl implements ContractService {
                 .year(LocalDateTime.now().getYear())
                 .build();
 
-        try {
-            emailService.sendContractInfoWithAttachment(emailReq, renter.getEmail(), outputPath);
-        } catch (MessagingException e) {
-            log.error("Failed to send contract email to renter {}: {}", renter.getEmail(), e.getMessage());
-        }
+        ContractMailEvent event = new ContractMailEvent(this,emailReq);
+        publisher.publishEvent(event);
+//        try {
+//            emailService.sendContractInfoWithAttachment(emailReq, renter.getEmail(), outputPath);
+//        } catch (MessagingException e) {
+//            log.error("Failed to send contract email to renter {}: {}", renter.getEmail(), e.getMessage());
+//        }
 
 
         emailReq.setRecipientName(owner.getFullName());
-        try {
-            emailService.sendContractInfoWithAttachment(emailReq, owner.getEmail(), outputPath);
-        } catch (MessagingException e) {
-            log.error("Failed to send contract email to owner {}: {}", owner.getEmail(), e.getMessage());
-        }
+//        try {
+//            emailService.sendContractInfoWithAttachment(emailReq, owner.getEmail(), outputPath);
+//        } catch (MessagingException e) {
+//            log.error("Failed to send contract email to owner {}: {}", owner.getEmail(), e.getMessage());
+//        }
 
         return BaseResponse.<ContractEmailRequest>builder()
                 .code(200)

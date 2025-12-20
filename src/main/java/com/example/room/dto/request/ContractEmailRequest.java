@@ -18,8 +18,8 @@ import java.time.LocalDateTime;
 public class ContractEmailRequest {
     private String recipientName;
     private Long contractId;
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private String roomName;
     private String roomAddress;
     private BigDecimal price;

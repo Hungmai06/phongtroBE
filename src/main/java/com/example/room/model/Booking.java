@@ -37,11 +37,6 @@ import java.util.List;
 @Where(clause = "deleted = false")
 @Table(name = "bookings")
 public class Booking extends BaseEntity{
-    @Column(name = "start_date",nullable = false)
-    private LocalDateTime startDate;
-
-    @Column(name = "end_date")
-    private LocalDateTime endDate;
 
     @Column(name = "total_price")
     private BigDecimal totalPrice;
@@ -49,7 +44,10 @@ public class Booking extends BaseEntity{
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private BookingStatus status = BookingStatus.PENDING;
-
+    @Column(name = "hour_date")
+    private String hourDate;
+    @Column(name = "appointment_date")
+    private LocalDate appointmentDate;
     @ManyToOne
     @JoinColumn(name = "room_id")
     private Room room;
@@ -57,9 +55,6 @@ public class Booking extends BaseEntity{
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
-    
-    @Column(name = "expiration_date")
-    private LocalDateTime expirationDate;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/room-service-usages")
@@ -49,6 +50,11 @@ public class RoomServiceUsageController {
     public BaseResponse<RoomServiceUsageResponse> getById(@PathVariable Long id) {
         return roomServiceUsageService.getById(id);
     }
+    @GetMapping("/room/{roomId}")
+    public BaseResponse<List<RoomServiceUsageResponse>> getByRoomIdAndMonth(@PathVariable Long roomId, @RequestParam String month) {
+        return roomServiceUsageService.getByRoomIdAndMonth(roomId, month);
+    }
+
 
     @Operation(summary = "Danh sách sử dụng dịch vụ (phân trang)")
     @GetMapping("")

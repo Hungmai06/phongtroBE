@@ -105,7 +105,7 @@ public class PaymentServiceImpl implements PaymentService {
                 Booking booking = null;
 
                     contract = contractRepository
-                            .findActiveContractByRoomId(room.getId(), ContractStatus.ACTIVE, LocalDateTime.now())
+                            .findActiveContractByRoomId(room.getId(), ContractStatus.ACTIVE)
                             .orElse(null);
 
                     if (contract != null) {
@@ -141,7 +141,6 @@ public class PaymentServiceImpl implements PaymentService {
                             .quantityOld(usage.getQuantityOld())
                             .quantityNew(usage.getQuantityNew())
                             .name(usage.getName())
-                            .pricePerUnit(usage.getPricePerUnit())
                             .totalPrice(usage.getTotalPrice())
                             .build();
                     serviceItems.add(item);
@@ -186,11 +185,6 @@ public class PaymentServiceImpl implements PaymentService {
 
                 break;
             }
-
-            case OTHER: {
-                payment.setAmount(request.getAmount());
-                break;
-            }
         }
 
         // Save duy nhất 1 lần
@@ -211,7 +205,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
 
-   @Override
+    @Override
     @Transactional
     public BaseResponse<PaymentResponse> updatePaymentStatus(Long id, PaymentUpdateRequest request) {
         Payment payment = paymentRepository.findById(id)
@@ -225,7 +219,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment updatedPayment = paymentRepository.save(payment);
 
         if (updatedPayment.getPaymentStatus() == PaymentStatus.PAID) {
-            handlePaidPayment(updatedPayment);
+            handlePaidPayment(updatedPayment,request.getStartDate(), request.getEndDate());
         }
 
         return BaseResponse.<PaymentResponse>builder()
@@ -235,13 +229,13 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
    }
 
-    private void handlePaidPayment(Payment payment) {
+    private void handlePaidPayment(Payment payment,LocalDate startDate, LocalDate endDate) {
         Booking booking = payment.getBooking();
 
         if (booking != null) {
             boolean contractExists = booking.getContracts() != null && !booking.getContracts().isEmpty();
             if (!contractExists && payment.getPaymentType() == PaymentType.DEPOSIT) {
-                contractService.createContractPayment(payment.getId());
+                contractService.createContractPayment(payment.getId(),startDate,endDate);
             }
         } else {
             // No booking associated (e.g. monthly payment created from roomId) — skip contract creation.

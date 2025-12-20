@@ -25,10 +25,6 @@ public class RoomServiceUsage extends BaseEntity {
     @Column(name = "name", length = 150)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", length = 100)
-    private RoomServiceUsageStatus type;
-
     @Column(name = "quantity_old")
     private Integer quantityOld;
 
@@ -40,9 +36,6 @@ public class RoomServiceUsage extends BaseEntity {
 
     @Column(name = "quantity_used", nullable = false)
     private Integer quantityUsed = 1;
-
-    @Column(name = "price_per_unit", precision = 13, scale = 2, nullable = false)
-    private BigDecimal pricePerUnit;
 
     @Column(name = "total_price", precision = 13, scale = 2, nullable = false)
     private BigDecimal totalPrice;

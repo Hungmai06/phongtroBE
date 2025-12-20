@@ -28,12 +28,9 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     SELECT c FROM Contract c
     WHERE c.booking.room.id = :roomId
       AND c.status = :status
-      AND (c.startDate IS NULL OR c.startDate <= :now)
-      AND (c.endDate IS NULL OR c.endDate >= :now)
 """)
     Optional<Contract> findActiveContractByRoomId(@Param("roomId") Long roomId,
-                                                  @Param("status") ContractStatus status,
-                                                  @Param("now") LocalDateTime now);
+                                                  @Param("status") ContractStatus status);
     @Query("""
     SELECT c FROM Contract c
     WHERE c.booking.room.owner.id = :ownerId

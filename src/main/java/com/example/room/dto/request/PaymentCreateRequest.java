@@ -29,10 +29,6 @@ public class PaymentCreateRequest {
     @NotNull(message = "Loại thanh toán không được để trống")
     private PaymentType paymentType;
 
-    @NotNull(message = "Số tiền không được để trống")
-    @DecimalMin(value = "0.0", message = "Số tiền phải lớn hơn hoặc bằng 0")
-    private BigDecimal amount;
-
     private PaymentMethod paymentMethod;
 
 }

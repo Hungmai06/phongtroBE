@@ -3,6 +3,7 @@ package com.example.room.dto.response;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,6 +20,6 @@ public class RoomTenantResponse {
     private String renterPhone;
 
     private Long contractId;
-    private LocalDateTime contractStartDate;
-    private LocalDateTime contractEndDate;
+    private LocalDate contractStartDate;
+    private LocalDate contractEndDate;
 }

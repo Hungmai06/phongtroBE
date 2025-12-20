@@ -31,10 +31,10 @@ import java.time.LocalDateTime;
 @Table(name = "contract")
 public class Contract extends BaseEntity{
     @Column(name = "start_date",nullable = false)
-    private LocalDateTime startDate;
+    private LocalDate startDate;
 
     @Column(name = "end_date")
-    private LocalDateTime endDate;
+    private LocalDate endDate;
 
     @Column(name = "contract_file")
     private String contractFile;

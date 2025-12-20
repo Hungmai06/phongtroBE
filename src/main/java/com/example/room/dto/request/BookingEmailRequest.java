@@ -19,8 +19,6 @@ public class BookingEmailRequest {
     private Long bookingId;
     private String roomName;
     private BigDecimal totalPrice;
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
     private String roomAddress;
     private BookingStatus status;
     private String ownerName;
@@ -28,4 +26,6 @@ public class BookingEmailRequest {
     private String ownerPhone;
     private String note;
     private String linkQR;
+    private String hourDate;
+    private LocalDate appointmentDate;
 }

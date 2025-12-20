@@ -21,5 +21,5 @@ public interface BookingService {
     BaseResponse<BookingResponse> updateBookingStatus(Long id, BookingUpdateRequest request) throws MessagingException;
 
     void deleteBooking(Long id);
-    void cancelExpiredBookings();
+
 }

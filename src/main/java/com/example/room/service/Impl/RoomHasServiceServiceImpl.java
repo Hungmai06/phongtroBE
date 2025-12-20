@@ -37,6 +37,8 @@ public class RoomHasServiceServiceImpl implements RoomHasServiceService {
 
         RoomHasService relation = RoomHasService.builder()
                 .room(room)
+                .type(req.getType())
+                .pricePerUnit(req.getPricePerUnit())
                 .roomService(service)
                 .build();
 

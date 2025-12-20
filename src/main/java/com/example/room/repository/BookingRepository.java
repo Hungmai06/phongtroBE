@@ -15,5 +15,5 @@ import org.springframework.data.domain.Pageable;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     Page<Booking> findByUser_Id(Long userId, Pageable pageable);
     Page<Booking> findByRoom_Owner_Id(Long ownerId, Pageable pageable);
-    List<Booking> findByStatusAndExpirationDateBefore(BookingStatus status, LocalDateTime now);
+    List<Booking> findByStatus(BookingStatus status);
 }

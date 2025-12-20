@@ -12,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
+import java.time.LocalDate;
+
 
 public interface ContractService {
 
@@ -24,6 +26,6 @@ public interface ContractService {
     void deleteContract(long id);
 
     ResponseEntity<byte[]> downloadContract(long id);
-    BaseResponse<ContractEmailRequest> createContractPayment(Long bookingId);
+    BaseResponse<ContractEmailRequest> createContractPayment(Long bookingId, LocalDate startDate, LocalDate endDate);
     PageResponse<RoomTenantResponse> getCurrentTenantsForOwner(Integer page, Integer size);
 }

@@ -74,21 +74,16 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidDataException("Phòng này hiện không có sẵn hoặc đã được người khác đặt.");
         }
         Booking booking = bookingMapper.toBooking(request);
-        booking.setStartDate(request.getStartDate());
-        if (request.getEndDate() != null) {
-            booking.setEndDate(request.getEndDate());
-        }
         booking.setRoom(room);
         booking.setUser(user);
         booking.setStatus(BookingStatus.PENDING);
         booking.setTotalPrice(room.getDeposit());
-        booking.setExpirationDate(LocalDateTime.now().plusHours(expirationHours));
 
         booking = bookingRepository.save(booking);
 
         return BaseResponse.<BookingResponse>builder()
                 .code(200)
-                .message("Tạo booking thành công")
+                .message("Yêu câu lịch xem phòng thành công")
                 .data(bookingMapper.toBookingResponse(booking))
                 .build();
     }
@@ -150,9 +145,10 @@ public class BookingServiceImpl implements BookingService {
             roomRepository.save(room1);
             roomSearchService.indexRoom(room1);
             booking.setStatus(request.getStatus());
+            booking.setHourDate(request.getHourDate());
+            booking.setAppointmentDate(request.getAppointmentDate());
             booking = bookingRepository.saveAndFlush(booking);
             PaymentCreateRequest paymentCreateRequest = PaymentCreateRequest.builder()
-                    .amount(new BigDecimal(0))
                     .bookingId(booking.getId())
                     .paymentType(PaymentType.DEPOSIT)
                     .paymentMethod(PaymentMethod.BANKING)
@@ -164,8 +160,6 @@ public class BookingServiceImpl implements BookingService {
             );
             BookingEmailRequest bookingEmailRequest = BookingEmailRequest.builder()
                     .bookingId(booking.getId())
-                    .endDate(booking.getEndDate())
-                    .startDate(booking.getStartDate())
                     .ownerEmail(owner.getEmail())
                     .status(booking.getStatus())
                     .roomAddress(room1.getAddress())
@@ -174,9 +168,9 @@ public class BookingServiceImpl implements BookingService {
                     .ownerName(owner.getFullName())
                     .totalPrice(booking.getTotalPrice())
                     .userName(user.getFullName())
-                    .note("Thanh toán trong vòng 24h để xác nhận đặt phòng")
-                    //.linkQR(bankAccountUtils.generateVietQR(bankAccount.getBankCode(), bankAccount.getAccountNumber(),
-                            //bankAccount.getAccountName(),booking.getTotalPrice(), description))
+                    .note("Xác nhận lịch xem phòng thành công")
+                    .hourDate(request.getHourDate())
+                    .appointmentDate(request.getAppointmentDate())
                     .build();
             emailService.sendBooking(bookingEmailRequest,user.getEmail());
         }
@@ -189,8 +183,6 @@ public class BookingServiceImpl implements BookingService {
             booking = bookingRepository.save(booking);
             BookingEmailRequest bookingEmailRequest = BookingEmailRequest.builder()
                     .bookingId(booking.getId())
-                    .endDate(booking.getEndDate())
-                    .startDate(booking.getStartDate())
                     .ownerEmail(owner.getEmail())
                     .status(booking.getStatus())
                     .roomAddress(room1.getAddress())
@@ -211,6 +203,7 @@ public class BookingServiceImpl implements BookingService {
                 roomSearchService.indexRoom(room);
             }
         }
+
         
         return BaseResponse.<BookingResponse>builder()
                 .code(200)
@@ -228,30 +221,4 @@ public class BookingServiceImpl implements BookingService {
         booking.setDeleted(true);
         bookingRepository.save(booking);
     }
-    @Override
-    @Transactional
-    public void cancelExpiredBookings() {
-        List<Booking> expiredBookings = bookingRepository.findByStatusAndExpirationDateBefore(
-                BookingStatus.PENDING, 
-                LocalDateTime.now()
-        );
-        if (expiredBookings.isEmpty()) {
-            return;
-        }
-        
-        log.info("Tìm thấy {} booking quá hạn cần xử lý.", expiredBookings.size());
-
-        for (Booking booking : expiredBookings) {
-            booking.setStatus(BookingStatus.CANCELLED);
-            Room room = booking.getRoom();
-            if (room != null && room.getStatus() == RoomStatus.RESERVED) {
-                room.setStatus(RoomStatus.AVAILABLE);
-                roomRepository.save(room);
-                roomSearchService.indexRoom(room);
-                log.info("Đã giải phóng phòng ID {} từ booking ID {}.", room.getId(), booking.getId());
-            }
-        }
-        bookingRepository.saveAll(expiredBookings);
-    }
-
 }

@@ -22,8 +22,6 @@ public class RoomServiceUsageRequest {
     private Integer quantityOld;
     private Integer quantityNew;
 
-    private BigDecimal pricePerUnit;
-
     private String month;
 
     private Long roomId;

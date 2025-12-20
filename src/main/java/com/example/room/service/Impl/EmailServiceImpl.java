@@ -1,5 +1,6 @@
 package com.example.room.service.Impl;
 
+import com.example.room.dto.events.ContractMailEvent;
 import com.example.room.dto.request.BookingEmailRequest;
 import com.example.room.dto.request.ContractEmailRequest;
 import com.example.room.dto.request.PaymentMonthlyRequest;
@@ -10,10 +11,14 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -28,6 +33,14 @@ public class EmailServiceImpl implements EmailService {
 
     @Value("${spring.mail.username}")
     private String fromEmail;
+
+    @Override
+    @Async
+    @EventListener
+    public void handleContractEmail(ContractMailEvent event) throws MessagingException {
+        sendContractInfoWithAttachment(event.getContractEmailRequest());
+    }
+
 
     @Override
     public void sendRegisterSuccessEmail( String email, String fullName,String description) throws MessagingException {
@@ -58,8 +71,8 @@ public class EmailServiceImpl implements EmailService {
         context.setVariable("bookingId", request.getBookingId());
         context.setVariable("roomName", request.getRoomName());
         context.setVariable("roomAddress", request.getRoomAddress());
-        context.setVariable("startDate", request.getStartDate());
-        context.setVariable("endDate", request.getEndDate());
+        context.setVariable("appointmentDate", request.getAppointmentDate());
+        context.setVariable("hourDate", request.getHourDate());
         context.setVariable("status", request.getStatus().name());
 
         // Thông tin chủ trọ
@@ -89,7 +102,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendContractInfoWithAttachment(ContractEmailRequest request, String email, String attachmentPath) throws MessagingException {
+    public void sendContractInfoWithAttachment(ContractEmailRequest request) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -121,12 +134,14 @@ public class EmailServiceImpl implements EmailService {
         String htmlContent = templateEngine.process("contract-infor", context);
 
         helper.setFrom(fromEmail);
-        helper.setTo(email);
+        helper.setTo(request.getOwnerEmail());
+        helper.setCc(request.getRenterEmail());
         helper.setSubject("Thông tin hợp đồng #" + request.getContractId());
         helper.setText(htmlContent, true);
 
         // Attach file if exists
-        if (attachmentPath != null) {
+        String attachmentPath = request.getContractUrl();
+        if ( attachmentPath!= null) {
             File file = new File(attachmentPath);
             if (file.exists() && file.isFile()) {
                 FileSystemResource resource = new FileSystemResource(file);

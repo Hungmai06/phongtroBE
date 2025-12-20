@@ -1,5 +1,6 @@
 package com.example.room.dto.response;
 
+import com.example.room.utils.Enums.RoomServiceUsageStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -17,5 +18,6 @@ public class RoomHasServiceResponse {
     private Long serviceId;
     private String serviceName;
 
-    private BigDecimal price;
+    private BigDecimal pricePerUnit;
+    private RoomServiceUsageStatus type;
 }

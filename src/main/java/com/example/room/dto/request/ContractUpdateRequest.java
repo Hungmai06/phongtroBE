@@ -8,6 +8,6 @@ import java.time.LocalDateTime;
 
 @Data
 public class ContractUpdateRequest {
-    private LocalDateTime endDate; // Dùng để gia hạn
+    private LocalDate endDate; // Dùng để gia hạn
     private ContractStatus status; // Dùng để chấm dứt (TERMINATED)
 }

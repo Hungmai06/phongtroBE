@@ -23,7 +23,6 @@ public class RoomServiceUsageResponse {
     private Integer quantityNew;
     private Integer quantityUsed;
 
-    private BigDecimal pricePerUnit;
     private BigDecimal totalPrice;
 
     private String month;

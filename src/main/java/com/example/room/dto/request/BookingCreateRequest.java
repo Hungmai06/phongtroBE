@@ -10,9 +10,4 @@ import java.time.LocalDateTime;
 public class BookingCreateRequest {
     @NotNull(message = "Room ID is required")
     private Long roomId;
-
-    @NotNull(message = "Start date is required")
-    private LocalDateTime startDate;
-
-    private LocalDateTime endDate;
 }

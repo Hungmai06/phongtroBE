@@ -7,8 +7,10 @@ import com.example.room.dto.response.RoomServiceUsageResponse;
 import com.example.room.exception.ResourceNotFoundException;
 import com.example.room.mapper.RoomServiceUsageMapper;
 import com.example.room.model.Room;
+import com.example.room.model.RoomHasService;
 import com.example.room.model.RoomService;
 import com.example.room.model.RoomServiceUsage;
+import com.example.room.repository.RoomHasServiceRepository;
 import com.example.room.repository.RoomRepository;
 import com.example.room.repository.RoomServiceRepository;
 import com.example.room.repository.RoomServiceUsageRepository;
@@ -35,6 +37,7 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
     private final RoomRepository roomRepository;
     private final RoomServiceRepository roomServiceRepository;
     private final RoomServiceUsageMapper roomServiceUsageMapper;
+    private final RoomHasServiceRepository roomHasServiceRepository;
 
     @Override
     public BaseResponse<RoomServiceUsageResponse> create(RoomServiceUsageRequest request) {
@@ -48,17 +51,17 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
 
             RoomServiceUsage usage = RoomServiceUsage.builder()
                     .name(request.getName())
-                    .type(request.getType())
                     .quantityOld(request.getQuantityOld())
                     .quantityNew(request.getQuantityNew())
-                    .pricePerUnit(request.getPricePerUnit())
                     .month(request.getMonth())
                     .room(room)
                     .roomService(roomService)
                     .build();
+            RoomHasService roomHasService = roomHasServiceRepository.findByRoomIdAndRoomServiceId(
+                    request.getRoomId(), request.getRoomServiceId()
+            ).orElseThrow(() -> new ResourceNotFoundException("Room does not have the specified service assigned"));
 
-
-            calculateTotal(usage);
+            calculateTotal(usage,roomHasService);
             roomServiceUsageRepository.save(usage);
 
             return BaseResponse.<RoomServiceUsageResponse> builder()
@@ -76,19 +79,22 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
             throw new IllegalArgumentException("Invalid month format. Expected format: YYYY-MM");
         }
             usage.setName(req.getName());
-            usage.setType(req.getType());
             usage.setQuantityOld(req.getQuantityOld());
             usage.setQuantityNew(req.getQuantityNew());
-            usage.setPricePerUnit(req.getPricePerUnit());
             usage.setMonth(req.getMonth());
 
-            calculateTotal(usage);
-            roomServiceUsageRepository.save(usage);
+        RoomHasService roomHasService = roomHasServiceRepository.findByRoomIdAndRoomServiceId(
+                req.getRoomId(), req.getRoomServiceId()
+        ).orElseThrow(() -> new ResourceNotFoundException("Room does not have the specified service assigned"));
 
+             calculateTotal(usage,roomHasService);
+            roomServiceUsageRepository.save(usage);
+            RoomServiceUsageResponse resp = roomServiceUsageMapper.toResponse(usage);
+            resp.setType(roomHasService.getType());
             return BaseResponse.<RoomServiceUsageResponse> builder()
                     .code(201)
                     .message("Room Service Usage Updated")
-                    .data(roomServiceUsageMapper.toResponse(usage))
+                    .data(resp)
                     .build();
     }
 
@@ -101,14 +107,48 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
     }
 
     @Override
+    public BaseResponse<List<RoomServiceUsageResponse>> getByRoomIdAndMonth(Long roomId, String month) {
+        List<RoomServiceUsage> usages = roomServiceUsageRepository.findByRoomIdAndMonth(roomId, month);
+        List<RoomServiceUsageResponse> responses = usages.stream()
+                .map(x -> {
+                    RoomServiceUsageResponse res = roomServiceUsageMapper.toResponse(x);
+
+                    roomHasServiceRepository
+                            .findByRoomIdAndRoomServiceId(
+                                    x.getRoom().getId(),
+                                    x.getRoomService().getId()
+                            )
+                            .map(RoomHasService::getType)
+                            .ifPresent(res::setType);
+
+                    return res;
+                })
+                .toList();
+
+        return BaseResponse.<List<RoomServiceUsageResponse>>builder()
+                .data(responses)
+                .message("Lấy danh sách sử dụng dịch vụ phòng theo tháng thành công")
+                .code(200)
+                .build();
+    }
+
+    @Override
     public BaseResponse<RoomServiceUsageResponse> getById(Long id) {
 
             RoomServiceUsage usage = roomServiceUsageRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Usage not found"));
+            RoomServiceUsageResponse resp = roomServiceUsageMapper.toResponse(usage);
+            roomHasServiceRepository
+                    .findByRoomIdAndRoomServiceId(
+                            usage.getRoom().getId(),
+                            usage.getRoomService().getId()
+                    )
+                    .map(RoomHasService::getType)
+                    .ifPresent(resp::setType);
             return BaseResponse.<RoomServiceUsageResponse> builder()
                     .code(201)
                     .message("Lấy dữu liệu thành công")
-                    .data(roomServiceUsageMapper.toResponse(usage))
+                    .data(resp)
                     .build();
 
     }
@@ -123,8 +163,21 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
             result = roomServiceUsageRepository.findAll(pageable);
         }
         List<RoomServiceUsageResponse> data = result.getContent().stream()
-                .map(roomServiceUsageMapper::toResponse)
+                .map(x -> {
+                    RoomServiceUsageResponse res = roomServiceUsageMapper.toResponse(x);
+
+                    roomHasServiceRepository
+                            .findByRoomIdAndRoomServiceId(
+                                    x.getRoom().getId(),
+                                    x.getRoomService().getId()
+                            )
+                            .map(RoomHasService::getType)
+                            .ifPresent(res::setType);
+
+                    return res;
+                })
                 .toList();
+
         return PageResponse.<RoomServiceUsageResponse>builder()
                 .totalPages(result.getTotalPages())
                 .totalElements(result.getTotalElements())
@@ -137,9 +190,9 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
     }
 
 
-    private void calculateTotal(RoomServiceUsage usage) {
+    private void calculateTotal(RoomServiceUsage usage,RoomHasService roomHasService) {
 
-        if (usage.getType() == RoomServiceUsageStatus.METERED) {
+        if (roomHasService.getType() == RoomServiceUsageStatus.METERED) {
             Integer used = (usage.getQuantityNew() != null && usage.getQuantityOld() != null)
                     ? usage.getQuantityNew() - usage.getQuantityOld()
                     : 0;
@@ -149,7 +202,7 @@ public class RoomServiceUsageServiceImpl implements RoomServiceUsageService {
 
         }
 
-        BigDecimal total = usage.getPricePerUnit()
+        BigDecimal total = roomHasService.getPricePerUnit()
                 .multiply(BigDecimal.valueOf(usage.getQuantityUsed()));
         usage.setTotalPrice(total);
     }
